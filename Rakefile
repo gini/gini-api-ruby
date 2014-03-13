@@ -12,12 +12,11 @@ task :default => :'spec:unit'
 require 'yard'
 
 YARD::Rake::YardocTask.new do |task|
-  task.files   = ['README.md', 'LICENSE.md', 'lib/**/*.rb']
+  task.files   = ['README.md', 'lib/**/*.rb']
   task.options = ['--output-dir', 'doc',
                   '--markup', 'markdown',
                   '--template-path', './yard',
-                  '--readme', 'README.md',
-                  '-', 'LICENSE.md']
+                  '--readme', 'README.md', '-']
 end
 
 ## Rspec testing
