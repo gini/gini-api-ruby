@@ -1,0 +1,7 @@
+img[alt="Logo"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  height: 75px;
+  width: 120px;
+}
