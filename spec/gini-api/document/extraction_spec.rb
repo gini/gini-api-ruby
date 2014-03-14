@@ -69,12 +69,18 @@ describe Gini::Api::Document::Extractions do
 
   it { should respond_to(:update) }
   it { should respond_to(:[]) }
+  it { should respond_to(:raw) }
 
   describe '#update' do
 
     it 'populates instance vars' do
       expect(extractions.payDate).to be_a(Hash)
       expect(extractions.payDate[:entity]).to eq('date')
+      extractions.update
+    end
+
+    it 'saves raw response' do
+      expect(extractions.raw).to eql(JSON.parse(response.body, symbolize_names: true))
       extractions.update
     end
 

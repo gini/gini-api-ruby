@@ -138,6 +138,8 @@ doc.extractions[:amountToPay] # Shortcut to get extraction value
 # => "10.00:EUR"
 doc.extractions.candidates[:dates]
 # => Array of all found candidates
+doc.extractions.raw
+# => {:extractions=>{...
 ```
 
 ### Submitting feedback
