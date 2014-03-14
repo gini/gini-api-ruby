@@ -10,7 +10,6 @@ describe Gini::Api::DocumentSet do
   let(:api) { double('API') }
   let(:data) do
     { totalCount: 42,
-      next: 20,
       documents:[
         {
           _links: { document: 'dummy' }
@@ -25,15 +24,10 @@ describe Gini::Api::DocumentSet do
   subject(:set) { Gini::Api::DocumentSet.new(api, data) }
 
   it { should respond_to(:total) }
-  it { should respond_to(:offset) }
   it { should respond_to(:documents) }
 
   it do
     expect(set.total).to eql(42)
-  end
-
-  it do
-    expect(set.offset).to eql(20)
   end
 
   it do
