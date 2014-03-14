@@ -11,20 +11,25 @@ end
 require 'simplecov'
 require 'simplecov-rcov'
 
-class SimpleCov::Formatter::MergedFormatter
-  def format(result)
-     SimpleCov::Formatter::HTMLFormatter.new.format(result)
-     SimpleCov::Formatter::RcovFormatter.new.format(result)
-  end
+SimpleCov.start do
+  add_filter "/spec"
+  add_filter "/vendor"
 end
-SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
 
+if ENV['TRAVIS']
+  require 'coveralls'
 
-if ENV["COVERAGE"]
-  SimpleCov.start do
-    add_filter "/spec"
-    add_filter "/vendor"
+  SimpleCov.formatter = Coveralls::SimpleCov::Formatter
+  Coveralls.wear!
+else
+  class SimpleCov::Formatter::MergedFormatter
+    def format(result)
+       SimpleCov::Formatter::HTMLFormatter.new.format(result)
+      SimpleCov::Formatter::RcovFormatter.new.format(result)
+    end
   end
+
+  SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
 end
 
 require 'gini-api'

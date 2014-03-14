@@ -4,6 +4,7 @@
 
 [![Build Status](https://travis-ci.org/gini/gini-api-ruby.png)](https://travis-ci.org/gini/gini-api-ruby)
 [![Code Climate](https://codeclimate.com/github/gini/gini-api-ruby.png)](https://codeclimate.com/github/gini/gini-api-ruby)
+[![Coverage Status](https://coveralls.io/repos/gini/gini-api-ruby/badge.png)](https://coveralls.io/r/gini/gini-api-ruby)
 [![Gem Version](https://badge.fury.io/rb/gini-api-ruby.png)](http://badge.fury.io/rb/gini-api-ruby)
 
 ## Resources
@@ -241,12 +242,21 @@ Finished in 31.3 seconds
 GINI_CLIENT_ID=***** GINI_CLIENT_SECRET=***** GINI_API_USER=***** GINI_API_PASS=***** rake spec:all
 ```
 
-#### Coverage
+#### Code coverage
 
-Set the environment variable CONVERAGE to enable the automatic coverage report creation. The resulting reports can be found in `coverage/`.
+Code coverage reports are automatically created. The reports can be found in `coverage/`.
 
 ```
-COVERGE=yes rake spec:unit
+rake spec:unit
+..............................................................................................................
+
+Finished in 0.79855 seconds
+110 examples, 0 failures
+
+Randomized with seed 49394
+
+Coverage report generated for RSpec to xxx/Code/gini-api-ruby/coverage. 274 / 274 LOC (100.0%) covered.
+Coverage report Rcov style generated for RSpec to xxx/Code/gini-api-ruby/coverage/rcov
 ```
 
 #### Continous Integration

@@ -41,4 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'simplecov-rcov'
   spec.add_development_dependency 'ci_reporter'
   spec.add_development_dependency 'webmock'
+  spec.add_development_dependency 'coveralls'
 end
