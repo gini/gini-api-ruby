@@ -1,8 +1,6 @@
 require 'bundler/gem_tasks'
 require 'rake/clean'
 
-ENV["gem_push"] = "false"
-
 CLEAN << FileList['pkg', '*.gem']
 
 task :test => :'spec:unit'
