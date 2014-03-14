@@ -4,6 +4,6 @@ module Gini
     BASE_VERSION = '0.9'
 
     # Version string
-    VERSION = "#{BASE_VERSION}.0"
+    VERSION = "#{BASE_VERSION}.1"
   end
 end
