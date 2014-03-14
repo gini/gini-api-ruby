@@ -7,6 +7,9 @@ module Gini
 
       attr_reader :total, :offset, :documents
 
+      # Enumerable mixin
+      include Enumerable
+
       # Instantiate a new Gini::Api::Document object from URL
       #
       # @param [Gini::Api::Client]    api        Gini::Api::Client object
@@ -19,6 +22,13 @@ module Gini
         @documents = data[:documents].map do |doc|
           Gini::Api::Document.new(api, doc[:_links][:document], doc)
         end
+      end
+
+      # Allow iteration on documents by yielding documents
+      # Required by Enumerable mixin
+      #
+      def each
+        @documents.each { |d| yield(d) }
       end
     end
   end

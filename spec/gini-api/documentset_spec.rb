@@ -9,7 +9,7 @@ describe Gini::Api::DocumentSet do
 
   let(:api) { double('API') }
   let(:data) do
-    { totalCount: 42,
+    { totalCount: 2,
       documents:[
         {
           _links: { document: 'dummy' }
@@ -25,9 +25,11 @@ describe Gini::Api::DocumentSet do
 
   it { should respond_to(:total) }
   it { should respond_to(:documents) }
+  it { should respond_to(:each) }
+  it { should respond_to(:sort) }
 
   it do
-    expect(set.total).to eql(42)
+    expect(set.total).to eql(2)
   end
 
   it do
@@ -35,4 +37,7 @@ describe Gini::Api::DocumentSet do
     expect(set.documents[0]).to eql(Gini::Api::Document)
   end
 
+  it '#each yields documents' do
+    expect { |b| set.each(&b) }.to yield_successive_args(Gini::Api::Document, Gini::Api::Document)
+  end
 end
