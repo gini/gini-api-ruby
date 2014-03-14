@@ -5,6 +5,8 @@ module Gini
     #
     class Document::Extractions
 
+      attr_reader :raw
+
       # Instantiate a new Gini::Api::Extractions object from hash
       #
       # @param [Gini::Api::Client] api Gini::Api::Client object
@@ -27,6 +29,9 @@ module Gini
             response
           )
         end
+
+        # Entire response
+        @raw = response.parsed
 
         response.parsed[:extractions].each do |k,v|
           instance_variable_set("@#{k}", v)
