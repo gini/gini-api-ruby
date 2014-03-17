@@ -60,6 +60,7 @@ module Gini
 
         # Sanitize api_uri
         @api_uri.sub!(/(\/)+$/, '')
+        @api_host = URI.parse(@api_uri).host
 
         # Create upload connection
         @upload_connection = Faraday.new(url: @api_uri) do |builder|
@@ -135,7 +136,15 @@ module Gini
         }.merge(options)
 
         timeout(@processing_timeout) do
-          @token.send(verb.to_sym, @api_uri + URI.parse(resource).path, opts)
+          parsed_resource = URI.parse(resource)
+
+          location = URI::HTTPS.build(
+            host:  @api_host,
+            path:  parsed_resource.path,
+            query: parsed_resource.query
+          )
+
+          @token.send(verb.to_sym, location.to_s , opts)
         end
       rescue OAuth2::Error => e
         raise Gini::Api::RequestError.new(
