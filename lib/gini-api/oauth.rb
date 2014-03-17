@@ -108,14 +108,7 @@ module Gini
       # @return [String] Collected authorization code
       #
       def extract_auth_code(location, csrf_token)
-        # Parse the location header from the response and fill hash
-        # query_params ({'code' => '123abc', 'state' => 'supersecret'})
-        begin
-          q = URI.parse(location).query
-          query_params = Hash[*q.split(/\=|\&/)]
-        rescue => e
-          raise Gini::Api::OAuthError.new("Failed to parse location header: #{e.message}")
-        end
+        query_params = parse_location(location)
 
         unless query_params['state'] == csrf_token
           raise Gini::Api::OAuthError.new(
@@ -131,6 +124,21 @@ module Gini
         end
 
         query_params['code']
+      end
+
+      # Parse auth_code and state from URI
+      #
+      # @param [String] location Location URI with auth_code and state
+      #
+      # @return [Hash] Hash with auth_code and state
+      #
+      def parse_location(location)
+        # Parse the location header from the response and return hash
+        # {'code' => '123abc', 'state' => 'supersecret'}
+        q = URI.parse(location).query
+        Hash[*q.split(/\=|\&/)]
+      rescue => e
+        raise Gini::Api::OAuthError.new("Failed to parse location header: #{e.message}")
       end
 
       # Login with username/password
