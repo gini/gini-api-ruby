@@ -37,7 +37,15 @@ module Gini
           if opts.key?(:auth_code) && !opts[:auth_code].empty?
             opts[:auth_code]
           else
-            login_with_credentials(api, client, opts[:username], opts[:password])
+            # Generate CSRF token to verify the response
+            csrf_token = SecureRandom.hex
+            location  = login_with_credentials(
+                          api,
+                          client,
+                          csrf_token,
+                          opts[:username],
+                          opts[:password])
+            extract_auth_code(location, csrf_token)
           end
 
         # Exchange code for a real token.
@@ -71,87 +79,6 @@ module Gini
         end
       end
 
-      # Login with username/password
-      #
-      # @param [Gini::Api::Client] api API object
-      # @param [OAuth2::Client] client OAuth2 client object
-      # @param [String] username API username
-      # @param [String] password API password
-      #
-      # @return [String] Collected authorization code
-      #
-      def login_with_credentials(api, client, username, password)
-        # Generate CSRF token to verify the response
-        csrf_token = SecureRandom.hex
-
-        # Build authentication URI
-        auth_uri = client.auth_code.authorize_url(
-          redirect_uri: api.oauth_redirect,
-          state: csrf_token
-        )
-
-        begin
-          # Accquire auth code
-          response = client.request(
-            :post,
-            auth_uri,
-            body: { username: username, password: password }
-          )
-          unless response.status == 303
-            raise Gini::Api::OAuthError.new(
-              "API login failed (code=#{response.status})",
-              response
-            )
-          end
-        rescue OAuth2::Error => e
-          raise Gini::Api::OAuthError.new(
-            "Failed to acquire auth_code (code=#{e.response.status})",
-            e.response
-          )
-        end
-
-        # Parse the location header from the response and fill hash
-        # query_params ({'code' => '123abc', 'state' => 'supersecret'})
-        begin
-          q = URI.parse(response.headers['location']).query
-          query_params = Hash[*q.split(/\=|\&/)]
-        rescue => e
-          raise Gini::Api::OAuthError.new("Failed to parse location header: #{e.message}")
-        end
-
-        unless query_params['state'] == csrf_token
-          raise Gini::Api::OAuthError.new(
-            "CSRF token mismatch detected (should=#{csrf_token}, "\
-            "is=#{query_params['state']})"
-          )
-        end
-
-        unless query_params.key?('code') && !query_params['code'].empty?
-          raise Gini::Api::OAuthError.new(
-            "Failed to extract code from location #{response.headers['location']}"
-          )
-        end
-
-        query_params['code']
-      end
-
-      # Exchange auth_code for a real token
-      #
-      # @param [Gini::Api::Client] api API object
-      # @param [OAuth2::Client] client OAuth2 client object
-      # @param [String] auth_code authorization code
-      #
-      # @return [OAuth2::AccessToken] AccessToken object
-      #
-      def exchange_code_for_token(api, client, auth_code)
-        client.auth_code.get_token(auth_code, redirect_uri: api.oauth_redirect)
-      rescue OAuth2::Error => e
-        raise Gini::Api::OAuthError.new(
-          "Failed to exchange auth_code for token (code=#{e.response.status})",
-          e.response
-        )
-      end
-
       # Destroy token
       #
       def destroy
@@ -167,6 +94,103 @@ module Gini
       rescue OAuth2::Error => e
         raise Gini::Api::OAuthError.new(
           "Failed to destroy token (code=#{e.response.status})",
+          e.response
+        )
+      end
+
+      private
+
+      # Extract auth_code from URI
+      #
+      # @param [String] location Location URI containing the auth_code
+      # @param [String] csrf_token CSRF token to verify request
+      #
+      # @return [String] Collected authorization code
+      #
+      def extract_auth_code(location, csrf_token)
+        query_params = parse_location(location)
+
+        unless query_params['state'] == csrf_token
+          raise Gini::Api::OAuthError.new(
+            "CSRF token mismatch detected (should=#{csrf_token}, "\
+            "is=#{query_params['state']})"
+          )
+        end
+
+        unless query_params.key?('code') && !query_params['code'].empty?
+          raise Gini::Api::OAuthError.new(
+            "Failed to extract code from location #{location}"
+          )
+        end
+
+        query_params['code']
+      end
+
+      # Parse auth_code and state from URI
+      #
+      # @param [String] location Location URI with auth_code and state
+      #
+      # @return [Hash] Hash with auth_code and state
+      #
+      def parse_location(location)
+        # Parse the location header from the response and return hash
+        # {'code' => '123abc', 'state' => 'supersecret'}
+        q = URI.parse(location).query
+        Hash[*q.split(/\=|\&/)]
+      rescue => e
+        raise Gini::Api::OAuthError.new("Failed to parse location header: #{e.message}")
+      end
+
+      # Login with username/password
+      #
+      # @param [Gini::Api::Client] api API object
+      # @param [OAuth2::Client] client OAuth2 client object
+      # @param [String] csrf_token CSRF token to verify request
+      # @param [String] username API username
+      # @param [String] password API password
+      #
+      # @return [String] Location header
+      #
+      def login_with_credentials(api, client, csrf_token, username, password)
+        # Build authentication URI
+        auth_uri = client.auth_code.authorize_url(
+          redirect_uri: api.oauth_redirect,
+          state: csrf_token
+        )
+
+        # Accquire auth code
+        response = client.request(
+          :post,
+          auth_uri,
+          body: { username: username, password: password }
+        )
+        unless response.status == 303
+          raise Gini::Api::OAuthError.new(
+            "API login failed (code=#{response.status})",
+            response
+          )
+        end
+        response.headers['location']
+      rescue OAuth2::Error => e
+        raise Gini::Api::OAuthError.new(
+          "Failed to acquire auth_code (code=#{e.response.status})",
+          e.response
+        )
+      end
+
+      # Exchange auth_code for a real token
+      #
+      # @param [Gini::Api::Client] api API object
+      # @param [OAuth2::Client] client OAuth2 client object
+      # @param [String] auth_code authorization code
+      #
+      # @return [OAuth2::AccessToken] AccessToken object
+      #
+      def exchange_code_for_token(api, client, auth_code)
+        client.auth_code.get_token(auth_code, redirect_uri: api.oauth_redirect)
+      rescue OAuth2::Error => e
+        raise Gini::Api::OAuthError.new(
+          "Failed to exchange auth_code for token (code=#{e.response.status})",
           e.response
         )
       end
