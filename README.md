@@ -16,7 +16,7 @@
 ## Installation
 
 ```
-gem install gini-api-ruby
+gem install gini-api
 ```
 
 ## Usage examples

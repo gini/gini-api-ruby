@@ -13,7 +13,7 @@ else
 end
 
 Gem::Specification.new do |spec|
-  spec.name          = 'gini-api-ruby'
+  spec.name          = 'gini-api'
   spec.version       = gem_version
   spec.authors       = ['Daniel Kerwin']
   spec.email         = ['tech@gini.net']
