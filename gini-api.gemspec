@@ -4,17 +4,9 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require 'gini-api/version'
 
-gem_version = Gini::Api::BASE_VERSION.dup
-
-if ENV.has_key?('BUILD_NUMBER')
-  gem_version << ".#{ENV['BUILD_NUMBER']}"
-else
-  gem_version = Gini::Api::VERSION
-end
-
 Gem::Specification.new do |spec|
   spec.name          = 'gini-api'
-  spec.version       = gem_version
+  spec.version       = Gini::Api::VERSION
   spec.authors       = ['Daniel Kerwin']
   spec.email         = ['tech@gini.net']
   spec.description   = %q{Ruby client to interact with the Gini API.}
