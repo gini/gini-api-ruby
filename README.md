@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/gini/gini-api-ruby.png)](https://travis-ci.org/gini/gini-api-ruby)
 [![Code Climate](https://codeclimate.com/github/gini/gini-api-ruby.png)](https://codeclimate.com/github/gini/gini-api-ruby)
 [![Coverage Status](https://coveralls.io/repos/gini/gini-api-ruby/badge.png)](https://coveralls.io/r/gini/gini-api-ruby)
-[![Gem Version](https://badge.fury.io/rb/gini-api-ruby.png)](http://badge.fury.io/rb/gini-api-ruby)
+[![Gem Version](https://badge.fury.io/rb/gini-api.png)](http://badge.fury.io/rb/gini-api)
 
 ## Resources
 
