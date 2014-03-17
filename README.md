@@ -42,10 +42,10 @@ api = Gini::Api::Client.new(
 )
 
 # auth_code (has been extracted outside of gini-api-ruby)
-api.login('1234567890')
+api.login(auth_code: '1234567890')
 
 # username/password
-api.login('user@example.com', 'password')
+api.login(username: 'me@example.com', password: 'secret')
 ```
 
 ### Upload
