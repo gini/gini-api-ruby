@@ -176,7 +176,7 @@ rescue Gini::Api::OAuthError => e
 end
 ```
 
-Please keep in mind that the amount of availabe instance variables differs depending on the error situation. For details please refer to the [Gini::Api::Error class](Gini/Api/Error.html).
+Please keep in mind that the amount of availabe instance variables differs depending on the error situation. For details please refer to the ```Gini::Api::Error``` class.
 
 ## Developers
 
