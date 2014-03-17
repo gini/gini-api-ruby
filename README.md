@@ -68,7 +68,7 @@ list.total
 # => 15
 list.documents
 # => [Gini::Api::Document, Gini::Api::Document, ...]
-list.each do { |doc| puts doc.id }
+list.each { |doc| puts doc.id }
 # => 1234567890-abc, 0987654321-cba, ...
 ```
 
@@ -97,7 +97,7 @@ search.total
 # => 5
 search.documents
 # => [Gini::Api::Document, Gini::Api::Document, ...]
-search.each do { |doc| puts doc.id }
+search.each { |doc| puts doc.id }
 # => 1234567890-abc, 0987654321-cba, ...
 ```
 
