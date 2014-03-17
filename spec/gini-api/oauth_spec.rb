@@ -62,8 +62,6 @@ describe Gini::Api::OAuth do
         )
       end
 
-      it { should respond_to(:login_with_credentials) }
-      it { should respond_to(:exchange_code_for_token) }
       it { should respond_to(:destroy) }
 
       it 'does set token' do
