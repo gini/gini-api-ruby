@@ -61,14 +61,6 @@ module Gini
         # Sanitize api_uri
         @api_uri.sub!(/(\/)+$/, '')
 
-        # Create upload connection
-        @upload_connection = Faraday.new(url: @api_uri) do |builder|
-          builder.use(Faraday::Request::Multipart)
-          builder.use(Faraday::Request::UrlEncoded)
-          builder.request(:retry, 3)
-          builder.adapter(Faraday.default_adapter)
-        end
-
         # Register parser (json+xml) based on API version
         register_parser
 
@@ -135,7 +127,7 @@ module Gini
         }.merge(options)
 
         timeout(@processing_timeout) do
-          @token.send(verb.to_sym, @api_uri + URI.parse(resource).path, opts)
+          @token.send(verb.to_sym, resource_to_location(resource).to_s , opts)
         end
       rescue OAuth2::Error => e
         raise Gini::Api::RequestError.new(
@@ -160,49 +152,36 @@ module Gini
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
       #
       def upload(file, &block)
-        @log.info("Uploading #{file}")
-
-        duration = {}
+        duration = Hash.new(0)
 
         # Document upload
-        duration[:upload] = Benchmark.realtime do
-          @response = @upload_connection.post do |req|
-            req.options[:timeout] = @upload_timeout
-            req.url 'documents/'
-            req.headers['Content-Type']  = 'multipart/form-data'
-            req.headers['Authorization'] = "Bearer #{@token.token}"
-            req.headers.merge!(version_header)
-            req.body = { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
-          end
-        end
+        duration[:upload], response = upload_document(file)
 
         # Start polling (0.5s) when document has been uploaded successfully
-        if @response.status == 201
-          location = @response.headers['location']
-          doc = Gini::Api::Document.new(self, location)
-          begin
-            timeout(@processing_timeout) do
-              duration[:processing] = Benchmark.realtime do
-                doc.poll(&block)
-              end
+        if response.status == 201
+          doc = Gini::Api::Document.new(self, response.headers['location'])
+
+          timeout(@processing_timeout) do
+            duration[:processing] = Benchmark.realtime do
+              doc.poll(&block)
             end
-          rescue Timeout::Error => e
-            ex = Gini::Api::ProcessingError.new(e.message)
-            ex.docid = doc.id
-            raise ex
           end
+
+          # Combine duration values and update doc object
+          duration[:total] = duration[:upload] + duration[:processing]
+          doc.duration = duration
+
+          doc
         else
-          raise Gini::Api::UploadError.new(
-            "Document upload failed with HTTP code #{@response.status}",
-            @response
+          fail Gini::Api::UploadError.new(
+            "Document upload failed with HTTP code #{response.status}",
+            response
           )
         end
-
-        # Combine duration values and update doc object
-        duration[:total] = duration[:upload] + duration[:processing]
-        doc.duration = duration
-
-        doc
+      rescue Timeout::Error => e
+        ex = Gini::Api::ProcessingError.new(e.message)
+        ex.docid = doc.id
+        raise ex
       end
 
       # Delete document
@@ -278,6 +257,54 @@ module Gini
           )
         end
         Gini::Api::DocumentSet.new(self, response.parsed)
+      end
+
+      private
+
+      # Helper to covert resource to a valid location.
+      #
+      # @param [String] resource URI to be converted
+      #
+      # @return [URI::HTTPS] URI::HTTPS object create from resource
+      #
+      def resource_to_location(resource)
+        parsed_resource = URI.parse(resource)
+        @api_host ||= URI.parse(@api_uri).host
+
+        URI::HTTPS.build(
+          host:  @api_host,
+          path:  parsed_resource.path,
+          query: parsed_resource.query
+        )
+      end
+
+      # Helper to upload document
+      #
+      # @param [String] file location of document to be uploaded
+      #
+      # @return [Faraday::Response] Response object from upload
+      #
+      def upload_document(file)
+        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
+          builder.use(Faraday::Request::Multipart)
+          builder.use(Faraday::Request::UrlEncoded)
+          builder.request(:retry, 3)
+          builder.adapter(Faraday.default_adapter)
+        end
+
+        response = nil
+        duration = Benchmark.realtime do
+          response = @upload_connection.post do |req|
+            req.options[:timeout] = @upload_timeout
+            req.url 'documents/'
+            req.headers['Content-Type']  = 'multipart/form-data'
+            req.headers['Authorization'] = "Bearer #{@token.token}"
+            req.headers.merge!(version_header)
+            req.body = { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
+          end
+        end
+
+        return duration, response
       end
     end
   end

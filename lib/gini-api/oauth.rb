@@ -85,20 +85,32 @@ module Gini
         @token.refresh_token && @token.refresh!
         response = token.delete("/accessToken/#{@token.token}")
         unless response.status == 204
-          raise Gini::Api::OAuthError.new(
+          fail_with_oauth_error(
             "Failed to destroy token /accessToken/#{@token.token} "\
             "(code=#{response.status})",
             response
           )
         end
       rescue OAuth2::Error => e
-        raise Gini::Api::OAuthError.new(
+        fail_with_oauth_error(
           "Failed to destroy token (code=#{e.response.status})",
           e.response
         )
       end
 
       private
+
+      # Helper method to fail with Gini::Api::OAuthError
+      #
+      # @param [String] msg Exception message
+      # @param [OAuth2::Response] response Response object
+      #
+      def fail_with_oauth_error(msg, response = nil)
+        raise Gini::Api::OAuthError.new(
+          msg,
+          response
+        )
+      end
 
       # Extract auth_code from URI
       #
@@ -111,14 +123,14 @@ module Gini
         query_params = parse_location(location)
 
         unless query_params['state'] == csrf_token
-          raise Gini::Api::OAuthError.new(
+          fail_with_oauth_error(
             "CSRF token mismatch detected (should=#{csrf_token}, "\
             "is=#{query_params['state']})"
           )
         end
 
         unless query_params.key?('code') && !query_params['code'].empty?
-          raise Gini::Api::OAuthError.new(
+          fail_with_oauth_error(
             "Failed to extract code from location #{location}"
           )
         end
@@ -138,7 +150,7 @@ module Gini
         q = URI.parse(location).query
         Hash[*q.split(/\=|\&/)]
       rescue => e
-        raise Gini::Api::OAuthError.new("Failed to parse location header: #{e.message}")
+        fail_with_oauth_error("Failed to parse location header: #{e.message}")
       end
 
       # Login with username/password
@@ -165,14 +177,14 @@ module Gini
           body: { username: username, password: password }
         )
         unless response.status == 303
-          raise Gini::Api::OAuthError.new(
+          fail_with_oauth_error(
             "API login failed (code=#{response.status})",
             response
           )
         end
         response.headers['location']
       rescue OAuth2::Error => e
-        raise Gini::Api::OAuthError.new(
+        fail_with_oauth_error(
           "Failed to acquire auth_code (code=#{e.response.status})",
           e.response
         )
@@ -189,7 +201,7 @@ module Gini
       def exchange_code_for_token(api, client, auth_code)
         client.auth_code.get_token(auth_code, redirect_uri: api.oauth_redirect)
       rescue OAuth2::Error => e
-        raise Gini::Api::OAuthError.new(
+        fail_with_oauth_error(
           "Failed to exchange auth_code for token (code=#{e.response.status})",
           e.response
         )
