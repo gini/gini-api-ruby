@@ -160,15 +160,9 @@ module Gini
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
           doc = Gini::Api::Document.new(self, response.headers['location'])
+          duration[:processing] = poll_document(doc, &block)
 
-          timeout(@processing_timeout) do
-            duration[:processing] = Benchmark.realtime do
-              doc.poll(&block)
-            end
-          end
-
-          # Combine duration values and update doc object
-          duration[:total] = duration[:upload] + duration[:processing]
+          duration[:total] = duration.values.inject(:+)
           doc.duration = duration
 
           doc
@@ -276,6 +270,22 @@ module Gini
           path:  parsed_resource.path,
           query: parsed_resource.query
         )
+      end
+
+      # Poll document and duration
+      #
+      # @param [Gini::Api::Document] doc Document instance to poll
+      #
+      # @return [Integer] Processing duration
+      #
+      def poll_document(doc, &block)
+        duration = 0
+        timeout(@processing_timeout) do
+          duration = Benchmark.realtime do
+            doc.poll(&block)
+          end
+        end
+        duration
       end
 
       # Helper to upload document
