@@ -288,6 +288,19 @@ module Gini
         raise ex
       end
 
+      # Setup API upload connection
+      #
+      # @return [Faraday] Faraday object to use in upload
+      #
+      def upload_connection
+        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
+          builder.use(Faraday::Request::Multipart)
+          builder.use(Faraday::Request::UrlEncoded)
+          builder.request(:retry, 3)
+          builder.adapter(Faraday.default_adapter)
+        end
+      end
+
       # Helper to upload document
       #
       # @param [String] file location of document to be uploaded
@@ -295,16 +308,9 @@ module Gini
       # @return [Faraday::Response] Response object from upload
       #
       def upload_document(file)
-        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
-          builder.use(Faraday::Request::Multipart)
-          builder.use(Faraday::Request::UrlEncoded)
-          builder.request(:retry, 3)
-          builder.adapter(Faraday.default_adapter)
-        end
-
         response = nil
         duration = Benchmark.realtime do
-          response = @upload_connection.post do |req|
+          response = upload_connection.post do |req|
             req.options[:timeout] = @upload_timeout
             req.url 'documents/'
             req.headers['Content-Type']  = 'multipart/form-data'
