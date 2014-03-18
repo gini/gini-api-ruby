@@ -28,10 +28,14 @@ describe 'Gini::Api integration test' do
 
   context 'OAuth' do
 
-    it '#login sets token' do
+    before do
       @api.login(username: @user, password: @pass)
+    end
+
+    it '#login sets token' do
       expect(@api.token.token).to match(/\w+-\w+/)
       expect(@api.token.expired?).to be_false
+      @api.logout
     end
 
     it '#logout destroys token' do
