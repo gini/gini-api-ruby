@@ -160,15 +160,9 @@ module Gini
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
           doc = Gini::Api::Document.new(self, response.headers['location'])
+          duration[:processing] = poll_document(doc, &block)
 
-          timeout(@processing_timeout) do
-            duration[:processing] = Benchmark.realtime do
-              doc.poll(&block)
-            end
-          end
-
-          # Combine duration values and update doc object
-          duration[:total] = duration[:upload] + duration[:processing]
+          duration[:total] = duration.values.inject(:+)
           doc.duration = duration
 
           doc
@@ -178,10 +172,6 @@ module Gini
             response
           )
         end
-      rescue Timeout::Error => e
-        ex = Gini::Api::ProcessingError.new(e.message)
-        ex.docid = doc.id
-        raise ex
       end
 
       # Delete document
@@ -278,6 +268,39 @@ module Gini
         )
       end
 
+      # Poll document and duration
+      #
+      # @param [Gini::Api::Document] doc Document instance to poll
+      #
+      # @return [Integer] Processing duration
+      #
+      def poll_document(doc, &block)
+        duration = 0
+        timeout(@processing_timeout) do
+          duration = Benchmark.realtime do
+            doc.poll(&block)
+          end
+        end
+        duration
+      rescue Timeout::Error => e
+        ex = Gini::Api::ProcessingError.new(e.message)
+        ex.docid = doc.id
+        raise ex
+      end
+
+      # Setup API upload connection
+      #
+      # @return [Faraday] Faraday object to use in upload
+      #
+      def upload_connection
+        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
+          builder.use(Faraday::Request::Multipart)
+          builder.use(Faraday::Request::UrlEncoded)
+          builder.request(:retry, 3)
+          builder.adapter(Faraday.default_adapter)
+        end
+      end
+
       # Helper to upload document
       #
       # @param [String] file location of document to be uploaded
@@ -285,16 +308,9 @@ module Gini
       # @return [Faraday::Response] Response object from upload
       #
       def upload_document(file)
-        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
-          builder.use(Faraday::Request::Multipart)
-          builder.use(Faraday::Request::UrlEncoded)
-          builder.request(:retry, 3)
-          builder.adapter(Faraday.default_adapter)
-        end
-
         response = nil
         duration = Benchmark.realtime do
-          response = @upload_connection.post do |req|
+          response = upload_connection.post do |req|
             req.options[:timeout] = @upload_timeout
             req.url 'documents/'
             req.headers['Content-Type']  = 'multipart/form-data'
