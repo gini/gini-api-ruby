@@ -172,10 +172,6 @@ module Gini
             response
           )
         end
-      rescue Timeout::Error => e
-        ex = Gini::Api::ProcessingError.new(e.message)
-        ex.docid = doc.id
-        raise ex
       end
 
       # Delete document
@@ -286,6 +282,10 @@ module Gini
           end
         end
         duration
+      rescue Timeout::Error => e
+        ex = Gini::Api::ProcessingError.new(e.message)
+        ex.docid = doc.id
+        raise ex
       end
 
       # Helper to upload document
