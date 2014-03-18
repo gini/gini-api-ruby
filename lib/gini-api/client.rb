@@ -152,42 +152,36 @@ module Gini
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
       #
       def upload(file, &block)
-        @log.info("Uploading #{file}")
-
-        duration = {}
+        duration = Hash.new(0)
 
         # Document upload
-        duration[:upload] = Benchmark.realtime do
-          @response = upload_document(file)
-        end
+        duration[:upload], response = upload_document(file)
 
         # Start polling (0.5s) when document has been uploaded successfully
-        if @response.status == 201
-          location = @response.headers['location']
-          doc = Gini::Api::Document.new(self, location)
-          begin
-            timeout(@processing_timeout) do
-              duration[:processing] = Benchmark.realtime do
-                doc.poll(&block)
-              end
+        if response.status == 201
+          doc = Gini::Api::Document.new(self, response.headers['location'])
+
+          timeout(@processing_timeout) do
+            duration[:processing] = Benchmark.realtime do
+              doc.poll(&block)
             end
-          rescue Timeout::Error => e
-            ex = Gini::Api::ProcessingError.new(e.message)
-            ex.docid = doc.id
-            raise ex
           end
+
+          # Combine duration values and update doc object
+          duration[:total] = duration[:upload] + duration[:processing]
+          doc.duration = duration
+
+          doc
         else
-          raise Gini::Api::UploadError.new(
-            "Document upload failed with HTTP code #{@response.status}",
-            @response
+          fail Gini::Api::UploadError.new(
+            "Document upload failed with HTTP code #{response.status}",
+            response
           )
         end
-
-        # Combine duration values and update doc object
-        duration[:total] = duration[:upload] + duration[:processing]
-        doc.duration = duration
-
-        doc
+      rescue Timeout::Error => e
+        ex = Gini::Api::ProcessingError.new(e.message)
+        ex.docid = doc.id
+        raise ex
       end
 
       # Delete document
@@ -298,14 +292,19 @@ module Gini
           builder.adapter(Faraday.default_adapter)
         end
 
-        @upload_connection.post do |req|
-          req.options[:timeout] = @upload_timeout
-          req.url 'documents/'
-          req.headers['Content-Type']  = 'multipart/form-data'
-          req.headers['Authorization'] = "Bearer #{@token.token}"
-          req.headers.merge!(version_header)
-          req.body = { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
+        response = nil
+        duration = Benchmark.realtime do
+          response = @upload_connection.post do |req|
+            req.options[:timeout] = @upload_timeout
+            req.url 'documents/'
+            req.headers['Content-Type']  = 'multipart/form-data'
+            req.headers['Authorization'] = "Bearer #{@token.token}"
+            req.headers.merge!(version_header)
+            req.body = { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
+          end
         end
+
+        return duration, response
       end
     end
   end
