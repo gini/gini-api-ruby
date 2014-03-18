@@ -283,8 +283,8 @@ module Gini
       # @param [String] file location of document to be uploaded
       #
       # @return [Faraday::Response] Response object from upload
+      #
       def upload_document(file)
-        # Create upload connection
         @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
           builder.use(Faraday::Request::Multipart)
           builder.use(Faraday::Request::UrlEncoded)
