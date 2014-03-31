@@ -67,6 +67,22 @@ module Gini
         end
       end
 
+      # Indicate if the document has been processed
+      #
+      # @return [Boolean] true if progress == PENDING
+      #
+      def completed?
+        @progress != 'PENDING'
+      end
+
+      # Was the document processed successfully?
+      #
+      # @return [Boolean] true/false based on @progress
+      #
+      def successful?
+        @progress == 'COMPLETED'
+      end
+
       # Get processed document
       #
       # @return [data] The binary representation of the processed document (pdf, jpg, png, ...)

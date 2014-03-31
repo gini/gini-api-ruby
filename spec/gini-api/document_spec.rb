@@ -48,6 +48,8 @@ describe Gini::Api::Document do
   it { should respond_to(:extractions) }
   it { should respond_to(:layout) }
   it { should respond_to(:pages) }
+  it { should respond_to(:completed?) }
+  it { should respond_to(:successful?) }
 
   it 'does accept duration' do
     expect(document.duration).to be_nil
@@ -93,6 +95,86 @@ describe Gini::Api::Document do
 
       it do
         expect(document.poll(0)).to be_nil
+      end
+
+    end
+
+  end
+
+  describe '#completed?' do
+
+    context 'with state = PENDING' do
+
+      let(:response) do
+        double('Response', {
+          status: 200,
+          headers: { 'content-type' => header },
+          body: {
+            progress: 'PENDING'
+          }.to_json
+        })
+      end
+
+      it do
+        expect(document.completed?).to be_false
+      end
+
+    end
+
+    context 'with state != PENDING' do
+
+      let(:response) do
+        double('Response', {
+          status: 200,
+          headers: { 'content-type' => header },
+          body: {
+            progress: 'COMPLETED'
+          }.to_json
+        })
+      end
+
+      it do
+        expect(document.completed?).to be_true
+      end
+
+    end
+
+  end
+
+  describe '#successful?' do
+
+    context 'with state = COMPLETED' do
+
+      let(:response) do
+        double('Response', {
+          status: 200,
+          headers: { 'content-type' => header },
+          body: {
+            progress: 'COMPLETED'
+          }.to_json
+        })
+      end
+
+      it do
+        expect(document.successful?).to be_true
+      end
+
+    end
+
+    context 'with state == ERROR' do
+
+      let(:response) do
+        double('Response', {
+          status: 200,
+          headers: { 'content-type' => header },
+          body: {
+            progress: 'ERROR'
+          }.to_json
+        })
+      end
+
+      it do
+        expect(document.successful?).to be_false
       end
 
     end

@@ -57,6 +57,10 @@ doc.id
 # => "123456789-abcd-ef12-000000000000"
 doc.progress
 # => "COMPLETED"
+doc.completed?
+# => true
+doc.successful?
+# => true
 ```
 
 ### List
