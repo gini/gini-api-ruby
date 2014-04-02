@@ -57,7 +57,7 @@ module Gini
       #
       # @param [Float] interval API polling interval
       #
-      def poll(interval = 0.5)
+      def poll(interval)
         EM.run do
           EM.add_periodic_timer(interval) do
             update

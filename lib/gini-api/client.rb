@@ -143,6 +143,7 @@ module Gini
       # Upload a document
       #
       # @param [String] file path of the document to upload
+      # @param [Float] interval Interval to poll progress
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object for uploaded document
       #
@@ -151,7 +152,7 @@ module Gini
       # @example Upload and monitor progress
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
       #
-      def upload(file, &block)
+      def upload(file, interval = 0.5, &block)
         duration = Hash.new(0)
 
         # Document upload
@@ -160,7 +161,7 @@ module Gini
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
           doc = Gini::Api::Document.new(self, response.headers['location'])
-          duration[:processing] = poll_document(doc, &block)
+          duration[:processing] = poll_document(doc, interval, &block)
 
           duration[:total] = duration.values.inject(:+)
           doc.duration = duration
@@ -271,14 +272,15 @@ module Gini
       # Poll document and duration
       #
       # @param [Gini::Api::Document] doc Document instance to poll
+      # @param [Float] interval Polling interval for completion
       #
       # @return [Integer] Processing duration
       #
-      def poll_document(doc, &block)
+      def poll_document(doc, interval, &block)
         duration = 0
         timeout(@processing_timeout) do
           duration = Benchmark.realtime do
-            doc.poll(&block)
+            doc.poll(interval, &block)
           end
         end
         duration
