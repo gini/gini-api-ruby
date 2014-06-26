@@ -5,15 +5,14 @@ describe Gini::Api::OAuth do
   let(:user)          { 'user@gini.net' }
   let(:pass)          { 'secret' }
   let(:auth_code)     { '1234567890' }
-  let(:state)         { '1234567890' }
   let(:code)          { 'abcdefghij'}
   let(:redirect)      { 'http://localhost' }
   let(:status)        { 303 }
   let(:token_status)  { 200 }
   let(:token_body)    { 'client_id=cid&client_secret=sec&code=1234567890&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost' }
-  let(:header)        { { 'location' => "https://api.gini.net?code=#{code}&state=#{state}" } }
+  let(:header)        { { 'location' => "https://api.gini.net?code=#{code}" } }
   let(:oauth_site)    { 'https://user.gini.net' }
-  let(:authorize_uri) { "#{oauth_site}/authorize?client_id=cid&redirect_uri=#{redirect}&response_type=code&state=#{state}" }
+  let(:token_uri)     { "#{oauth_site}/oauth/token" }
   let(:api) do
     double('API',
       client_id: 'cid',
@@ -28,21 +27,11 @@ describe Gini::Api::OAuth do
     context 'login with username/password' do
 
       before do
-        allow(SecureRandom).to \
-          receive(:hex) { state }
-
-        stub_request(:post,
-          authorize_uri
+        stub_request(
+          :post,
+          token_uri
         ).to_return(
           status: status,
-          headers: header,
-          body: {}
-        )
-
-        stub_request(:post,
-          "#{oauth_site}/token"
-        ).to_return(
-          status: token_status,
           headers: {
             'content-type' => 'application/json'
           },
@@ -68,83 +57,9 @@ describe Gini::Api::OAuth do
         expect(oauth.token.token).to eql('123-456')
       end
 
-      context 'with invalid credentials' do
-
-        let(:status) { 500 }
-
-        it do
-          expect {
-            Gini::Api::OAuth.new(
-              api,
-              username: user,
-              password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /Failed to acquire auth_code/)
-        end
-
-      end
-
-      context 'with non-redirect status code' do
-
-        let(:status) { 200 }
-
-        it do
-          expect {
-            Gini::Api::OAuth.new(
-              api,
-              username: user,
-              password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /API login failed/)
-        end
-      end
-
-      context 'with invalid location header' do
-
-        let(:header) { { location: 'https://api.gini.net' } }
-
-        it do
-          expect {
-            Gini::Api::OAuth.new(
-              api,
-              username: user,
-              password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /Failed to parse location header/)
-        end
-
-      end
-
-      context 'with CSRF token mismatch' do
-
-        let(:header) { { location: "https://rspec.gini.net?code=#{code}&state=hacked"} }
-
-        it do
-          expect {
-            Gini::Api::OAuth.new(
-              api,
-              username: user,
-              password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /CSRF token mismatch detected/)
-        end
-
-      end
-
-      context 'without code' do
-
-        let(:header) { { location: "https://api.gini.net?state=#{state}"} }
-
-        it do
-          expect {
-            Gini::Api::OAuth.new(
-              api,
-              username: user,
-              password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /Failed to extract code from location/)
-        end
-
-      end
-
       context 'with invalid client credentials' do
 
-        let(:token_status) { 401 }
+        let(:status) { 401 }
 
         it do
           expect {
@@ -152,7 +67,7 @@ describe Gini::Api::OAuth do
               api,
               username: user,
               password: pass
-            ) }.to raise_error(Gini::Api::OAuthError, /Failed to exchange auth_code/)
+            ) }.to raise_error(Gini::Api::OAuthError, /Failed to acquire token/)
         end
 
       end
@@ -162,8 +77,9 @@ describe Gini::Api::OAuth do
     context 'login with auth_code' do
 
       before do
-        stub_request(:post,
-          "#{oauth_site}/token"
+        stub_request(
+          :post,
+          token_uri
         ).with(
           body: 'client_id=cid&client_secret=sec&code=1234567890&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost'
         ).to_return(
@@ -212,8 +128,9 @@ describe Gini::Api::OAuth do
     let(:refresh_token) { false }
 
     before do
-      stub_request(:post,
-        "#{oauth_site}/token"
+      stub_request(
+        :post,
+        token_uri
       ).with(
         body: 'client_id=cid&client_secret=sec&code=1234567890&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost'
       ).to_return(
@@ -282,8 +199,9 @@ describe Gini::Api::OAuth do
   describe 'overridden AccessToken#refresh!' do
 
     before do
-      stub_request(:post,
-        "#{oauth_site}/token"
+      stub_request(
+        :post,
+        token_uri
       ).with(
         body: 'client_id=cid&client_secret=sec&code=1234567890&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost'
       ).to_return(
@@ -308,7 +226,7 @@ describe Gini::Api::OAuth do
 
       stub_request(
         :post,
-        "#{oauth_site}/token"
+        token_uri
       ).to_return(
         status: 200,
         headers: {
@@ -332,7 +250,7 @@ describe Gini::Api::OAuth do
 
     before do
       stub_request(:post,
-        "#{oauth_site}/token"
+        token_uri
       ).with(
         body: 'client_id=cid&client_secret=sec&code=1234567890&grant_type=authorization_code&redirect_uri=http%3A%2F%2Flocalhost'
       ).to_return(
@@ -358,7 +276,7 @@ describe Gini::Api::OAuth do
         stub_request(:get, "https://user.gini.net/a")
         stub_request(
           :post,
-          "#{oauth_site}/token"
+          token_uri
         ).to_return(
           status: 200,
           headers: {
@@ -385,7 +303,7 @@ describe Gini::Api::OAuth do
         stub_request(:get, "https://user.gini.net/a")
         stub_request(
           :post,
-          "#{oauth_site}/token"
+          token_uri
         ).to_return(
           status: 200,
           headers: {
