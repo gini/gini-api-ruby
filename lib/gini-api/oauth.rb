@@ -125,7 +125,7 @@ module Gini
         )
       end
 
-      # Exchange auth_code for a real token
+      # Exchange auth_code for a access token
       #
       # @param [Gini::Api::Client] api API object
       # @param [OAuth2::Client] client OAuth2 client object

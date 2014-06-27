@@ -1,5 +1,6 @@
 module Gini
   module Api
-    VERSION = "0.9.5"
+    # Package version
+    VERSION = "0.9.6"
   end
 end
