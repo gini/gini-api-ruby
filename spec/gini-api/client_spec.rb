@@ -258,7 +258,7 @@ describe Gini::Api::Client do
           allow(Gini::Api::Document).to \
             receive(:new).with(api, 'LOC'
           ) { doc }
-        api.token.stub(:token).and_return('abc-123')
+        allow(api.token).to receive(:token).and_return('abc-123')
         stub_request(
           :post,
           %r{/documents}
@@ -320,7 +320,7 @@ describe Gini::Api::Client do
         let(:status) { 203 }
 
         it do
-          api.token.stub(:delete).and_return(response)
+          allow(api.token).to receive(:delete).and_return(response)
           expect { api.delete('abc-123') }.to \
             raise_error(Gini::Api::DocumentError, /Deletion of docId abc-123 failed/)
         end
@@ -332,8 +332,8 @@ describe Gini::Api::Client do
         let(:status) { 204 }
 
         it do
-          api.token.stub(:delete).and_return(response)
-          expect(api.delete('abc-123')).to be_true
+          allow(api.token).to receive(:delete).and_return(response)
+          expect(api.delete('abc-123').class).to be_truthy
         end
 
       end
@@ -366,7 +366,7 @@ describe Gini::Api::Client do
       end
 
       before do
-        api.token.stub(:get).and_return(OAuth2::Response.new(response))
+        allow(api.token).to receive(:get).and_return(OAuth2::Response.new(response))
       end
 
       context 'with documents' do
@@ -428,7 +428,7 @@ describe Gini::Api::Client do
     describe '#search' do
 
       before do
-        api.token.stub(:get).and_return(OAuth2::Response.new(response))
+        allow(api.token).to receive(:get).and_return(OAuth2::Response.new(response))
       end
 
       let(:status) { 200 }

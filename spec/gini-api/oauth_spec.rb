@@ -151,7 +151,7 @@ describe Gini::Api::OAuth do
         %r{/accessToken/123-456}
       ).to_return(status: status)
 
-      oauth.token.stub(:refresh_token).and_return(refresh_token)
+      allow(oauth.token).to receive(:refresh_token).and_return(refresh_token)
     end
 
     subject(:oauth) { Gini::Api::OAuth.new(api, auth_code: auth_code) }

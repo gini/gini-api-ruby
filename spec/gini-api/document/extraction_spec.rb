@@ -7,7 +7,7 @@ describe Gini::Api::Document::Extractions do
       receive(:new) { oauth }
 
     api.login(auth_code: '1234567890')
-    api.token.stub(:get).with(
+    allow(api.token).to receive(:get).with(
       location,
       {
         headers: {
