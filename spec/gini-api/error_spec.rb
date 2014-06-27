@@ -24,7 +24,7 @@ describe Gini::Api::Error do
   end
 
   before do
-    api.token.stub(:get).and_return(response)
+    allow(api.token).to receive(:get).and_return(response)
   end
 
   context 'without request obj' do

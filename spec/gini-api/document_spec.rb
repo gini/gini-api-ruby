@@ -7,7 +7,7 @@ describe Gini::Api::Document do
       double('Gini::Api::OAuth', token: 'TOKEN', destroy: nil)
     end
     api.login(auth_code: '1234567890')
-    api.token.stub(:get).with(
+    allow(api.token).to receive(:get).with(
       location,
       { headers: { accept: header } }
     ).and_return(OAuth2::Response.new(response))
@@ -116,7 +116,7 @@ describe Gini::Api::Document do
       end
 
       it do
-        expect(document.completed?).to be_false
+        expect(document.completed?).to be_falsey
       end
 
     end
@@ -134,7 +134,7 @@ describe Gini::Api::Document do
       end
 
       it do
-        expect(document.completed?).to be_true
+        expect(document.completed?).to be_truthy
       end
 
     end
@@ -156,7 +156,7 @@ describe Gini::Api::Document do
       end
 
       it do
-        expect(document.successful?).to be_true
+        expect(document.successful?).to be_truthy
       end
 
     end
@@ -174,7 +174,7 @@ describe Gini::Api::Document do
       end
 
       it do
-        expect(document.successful?).to be_false
+        expect(document.successful?).to be_falsey
       end
 
     end
@@ -192,7 +192,7 @@ describe Gini::Api::Document do
     end
 
     it do
-      api.token.stub(:get).with(
+      allow(api.token).to receive(:get).with(
         "#{location}/processed",
         { headers: { accept: 'application/octet-stream' } }
       ).and_return(OAuth2::Response.new(pd_response))
@@ -211,7 +211,7 @@ describe Gini::Api::Document do
       end
 
       it do
-        api.token.stub(:get).with(
+        allow(api.token).to receive(:get).with(
           "#{location}/processed",
           { headers: { accept: 'application/octet-stream' } }
         ).and_return(OAuth2::Response.new(pd_response))
@@ -236,7 +236,7 @@ describe Gini::Api::Document do
     end
 
     it do
-      api.token.stub(:get).with(
+      allow(api.token).to receive(:get).with(
         "#{location}/extractions",
         { headers: { accept: header } }
       ).and_return(OAuth2::Response.new(ex_response))
@@ -312,8 +312,8 @@ describe Gini::Api::Document do
       let(:fb_response) { double('Response', status: 204) }
 
       it do
-        document.stub(:extractions) { double('Extractions').as_null_object }
-        api.token.stub(:put).with(
+        allow(document).to receive(:extractions) { double('Extractions').as_null_object }
+        allow(api.token).to receive(:put).with(
           "#{location}/extractions/bic",
           {
             headers: { 'content-type' => header },
@@ -331,8 +331,8 @@ describe Gini::Api::Document do
       let(:fb_response) { double('Response', status: 204) }
 
       it 'on invalid label' do
-        document.stub(:extractions) { double('Extractions', bic: nil) }
-        api.token.stub(:put).with(
+        allow(document).to receive(:extractions) { double('Extractions', bic: nil) }
+        allow(api.token).to receive(:put).with(
           "#{location}/extractions/bic",
           {
             headers: { 'content-type' => header },
@@ -351,8 +351,8 @@ describe Gini::Api::Document do
       let(:fb_response) { double('Response', status: 404, body: {}, env: {}) }
 
       it 'on invalid http code' do
-        document.stub(:extractions) { double('Extractions').as_null_object }
-        api.token.stub(:put).with(
+        allow(document).to receive(:extractions) { double('Extractions').as_null_object }
+        allow(api.token).to receive(:put).with(
           "#{location}/extractions/bic",
           {
             headers: { 'content-type' => header },
