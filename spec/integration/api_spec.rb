@@ -34,7 +34,7 @@ describe 'Gini::Api integration test' do
 
     it '#login sets token' do
       expect(@api.token.token).to match(/\w+-\w+/)
-      expect(@api.token.expired?).to be_false
+      expect(@api.token.expired?).to be_falsey
       @api.logout
     end
 
@@ -76,7 +76,7 @@ describe 'Gini::Api integration test' do
     end
 
     it '#delete returns true' do
-      expect(@api.delete(@doc.id)).to be_true
+      expect(@api.delete(@doc.id)).to be_truthy
       expect { @api.get(@doc.id) }.to raise_error(Gini::Api::RequestError)
       @api.logout
     end

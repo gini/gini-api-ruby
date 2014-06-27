@@ -76,20 +76,22 @@ module Gini
       # Destroy token
       #
       def destroy
-        @token.refresh_token && @token.refresh!
-        response = token.delete("/accessToken/#{@token.token}")
-        unless response.status == 204
-          fail_with_oauth_error(
-            "Failed to destroy token /accessToken/#{@token.token} "\
-            "(code=#{response.status})",
-            response
-          )
-        end
-      rescue OAuth2::Error => e
-        fail_with_oauth_error(
-          "Failed to destroy token (code=#{e.response.status})",
-          e.response
-        )
+        return "Not implemented yet. Come back later!"
+
+      #   @token.refresh_token && @token.refresh!
+      #   response = token.delete("/accessToken/#{@token.token}")
+      #   unless response.status == 204
+      #     fail_with_oauth_error(
+      #       "Failed to destroy token /accessToken/#{@token.token} "\
+      #       "(code=#{response.status})",
+      #       response
+      #     )
+      #   end
+      # rescue OAuth2::Error => e
+      #   fail_with_oauth_error(
+      #     "Failed to destroy token (code=#{e.response.status})",
+      #     e.response
+      #   )
       end
 
       private

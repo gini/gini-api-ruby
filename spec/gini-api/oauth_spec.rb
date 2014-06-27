@@ -102,6 +102,20 @@ describe Gini::Api::OAuth do
         expect(oauth.token.token).to eql('123-456')
       end
 
+      context 'with invalid auth_code' do
+
+        let(:token_status) { 400 }
+
+        it do
+          expect {
+            Gini::Api::OAuth.new(
+              api,
+              auth_code: auth_code
+            ) }.to raise_error(Gini::Api::OAuthError, /Failed to exchange auth_code/)
+        end
+
+      end
+
       context 'overrides #refresh!' do
 
         it do
@@ -161,6 +175,7 @@ describe Gini::Api::OAuth do
       let(:refresh_token) { true }
 
       it 'does a refresh first' do
+        pending "not implemented yet"
         expect(oauth.token).to receive(:refresh_token)
         expect(oauth.token).to receive(:refresh!)
         expect(oauth.destroy).to be_nil
@@ -171,6 +186,7 @@ describe Gini::Api::OAuth do
     context 'without refresh token' do
 
       it 'destroys token directly' do
+        pending "not implemented yet"
         expect(oauth.token).to receive(:refresh_token)
         expect(oauth.token).not_to receive(:refresh!)
         expect(oauth.destroy).to be_nil
@@ -182,6 +198,7 @@ describe Gini::Api::OAuth do
       let(:status) { 404 }
 
       it do
+        pending "not implemented yet"
         expect{oauth.destroy}.to raise_error Gini::Api::OAuthError, /Failed to destroy token/
       end
     end
@@ -191,6 +208,7 @@ describe Gini::Api::OAuth do
       let(:status) { 200 }
 
       it do
+        pending "not implemented yet"
         expect{oauth.destroy}.to raise_error Gini::Api::OAuthError, /Failed to destroy token/
       end
     end
