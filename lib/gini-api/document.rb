@@ -1,4 +1,4 @@
-require 'eventmachine'
+require 'timers'
 
 module Gini
   module Api
@@ -57,14 +57,14 @@ module Gini
       #
       # @param [Float] interval API polling interval
       #
-      def poll(interval)
-        EM.run do
-          EM.add_periodic_timer(interval) do
-            update
-            EM.stop if @progress =~ /(COMPLETED|ERROR)/
-            yield self if block_given?
-          end
+      def poll(interval, &block)
+        timers = Timers::Group.new
+        timers.every(interval) do
+          update
+          timers.cancel if @progress =~ /(COMPLETED|ERROR)/
+          yield self if block_given?
         end
+        nil
       end
 
       # Indicate if the document has been processed
