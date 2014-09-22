@@ -1,5 +1,3 @@
-require 'timers'
-
 module Gini
   module Api
 
@@ -58,11 +56,10 @@ module Gini
       # @param [Float] interval API polling interval
       #
       def poll(interval, &block)
-        timers = Timers::Group.new
-        timers.every(interval) do
+        until @progress =~ /(COMPLETED|ERROR)/ do
           update
-          timers.cancel if @progress =~ /(COMPLETED|ERROR)/
           yield self if block_given?
+          sleep(interval)
         end
         nil
       end
