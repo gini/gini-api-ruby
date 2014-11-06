@@ -1,4 +1,4 @@
-<img src="https://www.gini.net/wp-content/uploads/2014/02/Gini-API_logo.svg" width="222" alt="Gini API logo" />
+<img src="https://www.gini.net/assets/gini_api_logo.svg" width="222" alt="Gini API logo" />
 
 # Gini API Ruby client
 
