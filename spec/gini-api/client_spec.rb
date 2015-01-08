@@ -267,7 +267,7 @@ describe Gini::Api::Client do
           headers: {
             location: 'LOC'
           },
-          body: {}
+          body: '{}'.to_json
         )
       end
 

@@ -4,4 +4,3 @@ pkg
 vendor
 spec/reports
 .yardoc
-Gemfile.lock
