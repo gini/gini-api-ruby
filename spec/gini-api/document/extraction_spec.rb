@@ -47,7 +47,10 @@ describe Gini::Api::Document::Extractions do
             entity: 'date',
             value: '2012-06-20',
             candidates: 'dates'
-          }
+          },
+          invalid: {
+            this_is: 'wrong'
+          },
         },
         candidates: {
           dates: [
@@ -99,11 +102,20 @@ describe Gini::Api::Document::Extractions do
 
   describe '#[]' do
 
-    context 'with invalid key' do
+    context 'with missing key' do
 
       it 'raises exception' do
         expect { extractions[:unknown] }.to \
-          raise_error(Gini::Api::DocumentError, /Invalid extraction key unknown/)
+          raise_error(Gini::Api::DocumentError, /Invalid extraction key 'unknown'/)
+      end
+
+    end
+
+    context 'with missing :value in response' do
+
+      it 'raises exception' do
+        expect { extractions[:invalid] }.to \
+          raise_error(Gini::Api::DocumentError, /Extraction key 'invalid' has no :value defined/)
       end
 
     end
@@ -112,6 +124,94 @@ describe Gini::Api::Document::Extractions do
 
       it 'returns extraction value' do
         expect(extractions[:payDate]).to eql('2012-06-20')
+      end
+
+    end
+
+  end
+
+  describe '#method_missing' do
+
+    context 'with unknown extraction' do
+
+      context 'and only value' do
+
+        it 'will set instance variable to new hash' do
+          expect(extractions).to receive(:instance_variable_set).with('@test', {value: :test})
+          expect(extractions).to receive(:submit_feedback).with('test', {:value=>:test})
+          extractions.test = :test
+        end
+
+      end
+
+      context 'and hash' do
+
+        it 'will set instance variable to supplied hash' do
+          expect(extractions).to receive(:instance_variable_set).with('@test', {value: 'test', box: {}})
+          expect(extractions).to receive(:submit_feedback).with('test', {value: 'test', box: {}})
+          extractions.test = {value: 'test', box: {} }
+        end
+
+      end
+
+    end
+
+  end
+
+  describe '#submit_feedback' do
+
+    context 'with valid label' do
+
+      before do
+        allow(api.token).to receive(:put).with(
+          "#{location}/test",
+          {
+            headers: { 'content-type' => header },
+            body: { value: 'Johnny Bravo' }.to_json
+          }
+        ).and_return(OAuth2::Response.new(double('Response', status: 204)))
+      end
+
+      it 'succeeds' do
+        expect(extractions.submit_feedback(:test, {value: 'Johnny Bravo'})).to be_a(OAuth2::Response)
+      end
+
+    end
+
+    context 'with invalid label (http code 422)' do
+
+      before do
+        allow(api.token).to receive(:put).with(
+          "#{location}/test",
+          {
+            headers: { 'content-type' => header },
+            body: { value: 'Johnny Bravo' }.to_json
+          }
+        ).and_raise(Gini::Api::RequestError.new('dummy', double('xxx', status: 422, env: {}, body: {})))
+      end
+
+      it 'raises Gini::Api::DocumentError' do
+        expect{extractions.submit_feedback(:test, {value: 'Johnny Bravo'})}.to \
+        raise_error(Gini::Api::DocumentError, /Failed to submit feedback for label/)
+      end
+
+    end
+
+    context 'with undefined error' do
+
+      before do
+        allow(api.token).to receive(:put).with(
+          "#{location}/test",
+          {
+            headers: { 'content-type' => header },
+            body: { value: 'Johnny Bravo' }.to_json
+          }
+        ).and_raise(Gini::Api::RequestError.new('dummy', double('xxx', status: 500, env: {}, body: {})))
+      end
+
+      it 'raises Gini::Api::RequestError' do
+        expect{extractions.submit_feedback(:test, {value: 'Johnny Bravo'})}.to \
+        raise_error(Gini::Api::RequestError)
       end
 
     end
