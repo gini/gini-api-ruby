@@ -124,6 +124,7 @@ module Gini
 
       # Submit feedback on extraction label
       #
+      # @deprecated Use 'doc.extractions.LABEL = VALUE' instead. Will be removed in next version
       # @param [String] label Extraction label to submit feedback on
       # @param [String] value The new value for the given label
       #

@@ -144,14 +144,18 @@ doc.extractions.candidates[:dates]
 # => Array of all found candidates
 doc.extractions.raw
 # => {:extractions=>{...
+doc.extractions.undefinedLabel
+# => nil
 ```
 
 ### Submitting feedback
 
 ```ruby
-doc.submit_feedback(:bic, 'XXXXXXXX')
-# => nil
-doc.submit_feedback(:unknownlabel, 'XXXXXXX')
+doc.extractions.bic = 'XXXXXXXX'
+# => 'XXXXXXXX'
+doc.extractions.bic = { value: 'XXXXXXXX', :box=>{:top=>2176.0, :left=>2000.0, :width=>173.0, :height=>50.0, :page=>1 }
+# => { value: 'XXXXXXXX', box: { top: 2176.0, left: 2000.0, width: 173.0, height: 50.0, page: 1 }
+doc.extractions.unknownLabel = 'XXXXXXXX'
 # => raises Gini::Api::DocumentError
 ```
 
