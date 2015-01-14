@@ -18,7 +18,8 @@ describe Gini::Api::OAuth do
       client_id: 'cid',
       client_secret: 'sec',
       oauth_site: oauth_site,
-      oauth_redirect: redirect
+      oauth_redirect: redirect,
+      user_agent: 'gini-api-ruby/spec'
     )
   end
 

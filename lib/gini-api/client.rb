@@ -25,6 +25,7 @@ module Gini
       # @option options [String]  :api_uri API URI (https://api.gini.net)
       # @option options [String]  :api_version API version to use (v1)
       # @option options [Logger]  :log logger object to use (initialized with STDOUT otherwise)
+      # @option options [String]  :user_agent HTTP User-Agent (gini-api-ruby/VERSION (Faraday vFaraday::VERSION))
       #
       # @example
       #   api = Gini::Api::Client.new(
@@ -42,6 +43,7 @@ module Gini
           upload_timeout: 90,
           processing_timeout: 180,
           log: Logger.new(STDOUT),
+          user_agent: "gini-api-ruby/#{VERSION} (Faraday v#{Faraday::VERSION})"
         }.merge(options)
 
         # Ensure mandatory keys are set

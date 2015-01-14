@@ -28,6 +28,7 @@ module Gini
           token_url: '/oauth/token',
           max_redirects: 0,
           raise_errors: true,
+          connection_opts: { headers: { user_agent: api.user_agent } }
         )
 
         # Verify opts. Prefered authorization methis is auth_code. If no auth_code is present a login from
