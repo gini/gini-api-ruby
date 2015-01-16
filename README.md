@@ -53,6 +53,9 @@ api.login(username: 'me@example.com', password: 'secret')
 ```ruby
 doc = api.upload('/tmp/my_doc.pdf')
 # => Gini::Api::Document
+fh = File.open('/tmp/scan.pdf', 'r')
+doc = api.upload(fh)
+# => Gini::Api::Document
 doc.id
 # => "123456789-abcd-ef12-000000000000"
 doc.progress

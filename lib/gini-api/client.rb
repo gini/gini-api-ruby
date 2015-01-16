@@ -144,7 +144,7 @@ module Gini
 
       # Upload a document
       #
-      # @param [String] file path of the document to upload
+      # @param [String] file path or open filehandle of the document to upload
       # @param [Float] interval Interval to poll progress
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object for uploaded document
@@ -307,7 +307,7 @@ module Gini
 
       # Helper to upload document
       #
-      # @param [String] file location of document to be uploaded
+      # @param [String] file location of document or open filehandle to be uploaded
       #
       # @return [Faraday::Response] Response object from upload
       #
