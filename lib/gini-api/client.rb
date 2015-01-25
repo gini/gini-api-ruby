@@ -145,20 +145,23 @@ module Gini
       # Upload a document
       #
       # @param [String] file path or open filehandle of the document to upload
+      # @param [String] doctype_hint Document type hint to optimize results or get incubator results
       # @param [Float] interval Interval to poll progress
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object for uploaded document
       #
       # @example Upload and wait for completion
       #   doc = api.upload('/tmp/myfile.pdf')
+      # @example Upload with doctype hint
+      #   doc = api.upload('/tmp/myfile.pdf', doctype_hint='Receipt')
       # @example Upload and monitor progress
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
       #
-      def upload(file, interval = 0.5, &block)
+      def upload(file, doctype_hint = nil, interval = 0.5, &block)
         duration = Hash.new(0)
 
         # Document upload
-        duration[:upload], response = upload_document(file)
+        duration[:upload], response = upload_document(file, doctype_hint)
 
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
@@ -308,15 +311,17 @@ module Gini
       # Helper to upload document
       #
       # @param [String] file location of document or open filehandle to be uploaded
+      # @param [String] doctype_hint Document type hint to optimize results or get incubator results
       #
       # @return [Faraday::Response] Response object from upload
       #
-      def upload_document(file)
+      def upload_document(file, doctype_hint)
         response = nil
         duration = Benchmark.realtime do
           response = upload_connection.post do |req|
             req.options[:timeout] = @upload_timeout
-            req.url 'documents/'
+            req.url 'documents'
+            req.params[:doctype] = doctype_hint if doctype_hint
             req.headers['Content-Type']  = 'multipart/form-data'
             req.headers['Authorization'] = "Bearer #{@token.token}"
             req.headers.merge!(version_header)
