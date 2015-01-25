@@ -32,6 +32,7 @@ describe Gini::Api::Document do
         b: 2,
         progress: 'PENDING',
         _links: {
+          document: location,
           extractions: "#{location}/extractions",
           layout: "#{location}/layout",
           processed: "#{location}/processed"
@@ -50,6 +51,7 @@ describe Gini::Api::Document do
   it { should respond_to(:pages) }
   it { should respond_to(:completed?) }
   it { should respond_to(:successful?) }
+  it { should respond_to(:report_error) }
 
   it 'does accept duration' do
     expect(document.duration).to be_nil
@@ -362,6 +364,56 @@ describe Gini::Api::Document do
 
         expect { document.submit_feedback(:bic, 'XXXXXXXX') }.to \
           raise_error(Gini::Api::DocumentError, /Failed to submit feedback for label bic/)
+      end
+
+    end
+
+  end
+
+  describe '#report_error' do
+
+    let(:report_response) do
+      double('Response', {
+        status: 200,
+        headers: { 'content-type' => header },
+        body: {
+          message: "error was reported, please refer to the given error id",
+          errorId: "deadbeef-dead-dead-beef-deadbeeeeef",
+        }.to_json
+      })
+    end
+
+    context 'succeeds and returns error id' do
+
+      it do
+        expect(api.token).to receive(:post).with(
+          "#{location}/errorreport",
+          {
+            headers: { accept: header },
+            params: { summary: nil, description: nil }
+          }
+        ).and_return(OAuth2::Response.new(report_response))
+
+        expect(document.report_error()).to eql("deadbeef-dead-dead-beef-deadbeeeeef")
+      end
+
+    end
+
+    context 'fails and raises exception' do
+
+      let(:report_response) { double('Response', status: 404, body: {}, env: {}) }
+
+      it do
+        expect(api.token).to receive(:post).with(
+          "#{location}/errorreport",
+          {
+            headers: { accept: header },
+            params: { summary: nil, description: nil }
+          }
+        ).and_return(OAuth2::Response.new(report_response))
+
+        expect { document.report_error() }.to \
+          raise_error(Gini::Api::DocumentError, /Failed to submit error report for document/)
       end
 
     end

@@ -191,6 +191,19 @@ end
 
 Please keep in mind that the amount of availabe instance variables differs depending on the error situation. For details please refer to the ```Gini::Api::Error``` class.
 
+## Submitting error reports
+
+If the processing result for a document was not satisfactory (e.g. extractions where empty or incorrect), you can create an error report for a document. This allows Gini to analyze and correct the problem that was found. The owner of this document must agree that Gini can use this document for debugging and error analysis. The returned errorId can be used to refer to the reported error towards the Gini support.
+
+```ruby
+doc = api.get('123456789-abcd-ef12-000000000000')
+# => Gini::Api::Document
+doc.report_error()
+# => deadbeef-dead-dead-beef-deadbeeeeef
+doc.report_error(summary='Just a short summary of the problem', description='A detailed description...')
+# => deadbeef-dead-dead-beef-deadbeeeeef
+```
+
 ## Developers
 
 ### Getting started

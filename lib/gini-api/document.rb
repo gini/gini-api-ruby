@@ -145,6 +145,28 @@ module Gini
           )
         end
       end
+
+      # Submit error report on document
+      #
+      # @param [String] summary Short summary on the error found
+      # @param [String] description More detailed description of the error found
+      #
+      # @return [String] Error ID retured from API
+      #
+      def report_error(summary = nil, description = nil)
+        response = @api.request(
+          :post,
+          "#{@_links[:document]}/errorreport",
+          params: { summary: summary, description: description }
+        )
+        unless response.status == 200
+          raise Gini::Api::DocumentError.new(
+            "Failed to submit error report for document #{@id} (code=#{response.status})",
+            response
+          )
+        end
+        response.parsed[:errorId]
+      end
     end
   end
 end
