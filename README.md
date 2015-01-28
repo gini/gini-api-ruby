@@ -153,12 +153,23 @@ doc.extractions.undefinedLabel
 # => nil
 ```
 
+#### Incubator
+
+The incubator Gini API is unstable and subject of change. It allows early access to immature features which are still in research or under development. Please refer to the official API documentation for further details.
+
+```ruby
+doc.extractions(incubator=true).amountLiters
+# => {:amountLiters=>{:entity=>"volume", :value=>"25.34:l", :box=>{:top=>1774.0, :left=>674.0, :width=>376.0, :height=>48.0, :page=>1}}
+doc.extractions(incubator=true)[:amountLiters]
+# => "25.34:l"
+```
+
 ### Submitting feedback
 
 ```ruby
 doc.extractions.bic = 'XXXXXXXX'
 # => 'XXXXXXXX'
-doc.extractions.bic = { value: 'XXXXXXXX', :box=>{:top=>2176.0, :left=>2000.0, :width=>173.0, :height=>50.0, :page=>1 }
+doc.extractions.bic = { value: 'XXXXXXXX', :box=>{ :top=>2176.0, :left=>2000.0, :width=>173.0, :height=>50.0, :page=>1 } }
 # => { value: 'XXXXXXXX', box: { top: 2176.0, left: 2000.0, width: 173.0, height: 50.0, page: 1 }
 doc.extractions.unknownLabel = 'XXXXXXXX'
 # => raises Gini::Api::DocumentError

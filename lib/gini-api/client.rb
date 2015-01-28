@@ -79,6 +79,9 @@ module Gini
         OAuth2::Response.register_parser(:gini_xml, [version_header(:xml)[:accept]]) do |body|
           MultiXml.parse(body) rescue body
         end
+        OAuth2::Response.register_parser(:gini_incubator, [version_header(:json, :incubator)[:accept]]) do |body|
+          MultiJson.load(body, symbolize_keys: true) rescue body
+        end
       end
 
       # Acquire OAuth2 token and popolate @oauth (instance of Gini::Api::OAuth.new)
@@ -108,11 +111,12 @@ module Gini
       # Version accept header based on @api_version
       #
       # @param [Symbol, String] type Expected response type (:xml, :json)
+      # @param [Symbol, String] version API version (:v1, :incubator)
       #
       # @return [Hash] Return accept header or empty hash
       #
-      def version_header(type = @api_type)
-        { accept: "application/vnd.gini.#{@api_version}+#{type}" }
+      def version_header(type = @api_type, version = @api_version)
+        { accept: "application/vnd.gini.#{version}+#{type}" }
       end
 
       # Request wrapper that sets URI and accept header
