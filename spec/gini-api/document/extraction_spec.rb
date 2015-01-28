@@ -33,8 +33,9 @@ describe Gini::Api::Document::Extractions do
     )
   end
 
-  let(:header)   { 'application/vnd.gini.v1+json' }
-  let(:location) { 'https://api.gini.net/document/aaa-bbb-ccc/extractions' }
+  let(:incubator) { false }
+  let(:header)    { 'application/vnd.gini.v1+json' }
+  let(:location)  { 'https://api.gini.net/document/aaa-bbb-ccc/extractions' }
   let(:response) do
     double('Response',
       status: 200,
@@ -68,7 +69,7 @@ describe Gini::Api::Document::Extractions do
     )
   end
 
-  subject(:extractions) { Gini::Api::Document::Extractions.new(api, location) }
+  subject(:extractions) { Gini::Api::Document::Extractions.new(api, location, incubator) }
 
   it { should respond_to(:update) }
   it { should respond_to(:[]) }
@@ -94,6 +95,44 @@ describe Gini::Api::Document::Extractions do
       it 'raises exception' do
         expect { extractions.update }.to \
           raise_error(Gini::Api::DocumentError, /Failed to fetch extractions from #{location}/)
+      end
+
+    end
+
+    context 'failed to parse response' do
+
+      let(:response) do
+        double('Response',
+          status: 200,
+          headers: {
+            'content-type' => 'vnd/gini.not.supported+json'
+          },
+          env: {},
+          body: {}.to_json
+        )
+      end
+
+      it 'raises exception' do
+        expect { extractions.update }.to \
+          raise_error(Gini::Api::DocumentError, /Failed to parse extractions from #{location}/)
+      end
+
+    end
+
+    context 'with incubator=true' do
+
+      let(:extractions) { Gini::Api::Document::Extractions.new(api, location, incubator=true) }
+
+      it do
+        expect(api.token).to receive(:get).with(
+          location,
+          {
+            headers: {
+              accept: 'application/vnd.gini.incubator+json'
+            }
+          }
+        ).and_return(OAuth2::Response.new(response))
+        expect(extractions.instance_variable_get(:@req_opts)).to eql({ headers: { accept: 'application/vnd.gini.incubator+json' } })
       end
 
     end

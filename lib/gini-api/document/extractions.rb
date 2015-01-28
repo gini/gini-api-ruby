@@ -11,9 +11,17 @@ module Gini
       #
       # @param [Gini::Api::Client] api Gini::Api::Client object
       # @param [String] location Document URL
-      def initialize(api, location)
-        @api      = api
-        @location = location
+      # @param [Boolean] incubator Return experimental extractions
+      #
+      def initialize(api, location, incubator = false)
+        @api       = api
+        @location  = location
+        @incubator = incubator
+        @req_opts  = {}
+
+        if incubator
+          @req_opts = { headers: @api.version_header(:json, :incubator) }
+        end
 
         update
       end
@@ -21,7 +29,7 @@ module Gini
       # Populate instance variables from fetched extractions
       #
       def update
-        response = @api.request(:get, @location)
+        response = @api.request(:get, @location, @req_opts)
 
         unless response.status == 200
           raise Gini::Api::DocumentError.new(
@@ -32,6 +40,14 @@ module Gini
 
         # Entire response
         @raw = response.parsed
+
+        # raise exception if parsing failed
+        if response.parsed.nil?
+          raise Gini::Api::DocumentError.new(
+            "Failed to parse extractions from #{@location}",
+            response
+          )
+        end
 
         response.parsed[:extractions].each do |k,v|
           instance_variable_set("@#{k}", v)

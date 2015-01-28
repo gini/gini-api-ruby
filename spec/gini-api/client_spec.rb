@@ -58,6 +58,11 @@ describe Gini::Api::Client do
         include(:gini_xml)
     end
 
+    it do
+      expect(OAuth2::Response::PARSERS.keys).to \
+        include(:gini_incubator)
+    end
+
   end
 
   describe '#login' do
@@ -136,6 +141,15 @@ describe Gini::Api::Client do
       it 'returns accept header with xml type' do
         expect(api.version_header(:xml)).to \
           eql({ accept: 'application/vnd.gini.v1+xml' })
+      end
+
+    end
+
+    context 'with incubator' do
+
+      it 'returns accept header with incubator version' do
+        expect(api.version_header(:json, :incubator)).to \
+          eql({ accept: 'application/vnd.gini.incubator+json' })
       end
 
     end
@@ -219,6 +233,24 @@ describe Gini::Api::Client do
             '/dummy',
             type: 'xml'
           ).parsed).to be_a Hash
+        end
+
+      end
+
+      context 'return JSON on incubator request' do
+
+        let(:header) { 'application/vnd.gini.incubator+json' }
+        let(:body)   {
+          {
+            a: 1,
+            b: 2
+          }.to_json
+        }
+
+        it do
+          expect(api.token).to \
+            receive(:get).and_return(OAuth2::Response.new(response))
+          expect(api.request(:get, '/dummy').parsed).to be_a Hash
         end
 
       end
