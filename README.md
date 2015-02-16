@@ -58,6 +58,10 @@ doc = api.upload(fh)
 # => Gini::Api::Document
 doc = api.upload('tmp/my_receipt.pdf', doctype_hint='Receipt')
 # => Gini::Api::Document
+doc = api.upload('This is a utf-8 text message i would love to get extractions from', text: true)
+# => Gini::Api::Document
+doc = api.upload('/tmp/my_doc.txt')
+# => Gini::Api::Document
 doc.id
 # => "123456789-abcd-ef12-000000000000"
 doc.progress
