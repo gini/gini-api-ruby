@@ -149,28 +149,38 @@ module Gini
       # Upload a document
       #
       # @param [String] file path or open filehandle of the document to upload
-      # @param [String] doctype_hint Document type hint to optimize results or get incubator results
-      # @param [Float] interval Interval to poll progress
+      # @param [Hash] options Hash of available upload settings
+      # @option options [String] :doctype_hint Document type hint to optimize results or get incubator results
+      # @option options [String] :text Use given file-string as text upload
+      # @option options [Float]  :interval Interval to poll progress
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object for uploaded document
       #
       # @example Upload and wait for completion
       #   doc = api.upload('/tmp/myfile.pdf')
       # @example Upload with doctype hint
-      #   doc = api.upload('/tmp/myfile.pdf', doctype_hint='Receipt')
+      #   doc = api.upload('/tmp/myfile.pdf', doctype_hint: 'Receipt')
       # @example Upload and monitor progress
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
+      # @example Upload and monitor progress
+      #   doc = api.upload('This is a text message i would love to get extractions from', text: true)
       #
-      def upload(file, doctype_hint = nil, interval = 0.5, &block)
+      def upload(file, options = {}, &block)
+        opts = {
+          doctype_hint: nil,
+          text: false,
+          interval: 0.5
+        }.merge(options)
+
         duration = Hash.new(0)
 
         # Document upload
-        duration[:upload], response = upload_document(file, doctype_hint)
+        duration[:upload], response = upload_document(file, opts)
 
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
           doc = Gini::Api::Document.new(self, response.headers['location'])
-          duration[:processing] = poll_document(doc, interval, &block)
+          duration[:processing] = poll_document(doc, opts[:interval], &block)
 
           duration[:total] = duration.values.inject(:+)
           doc.duration = duration
@@ -319,13 +329,17 @@ module Gini
       #
       # @return [Faraday::Response] Response object from upload
       #
-      def upload_document(file, doctype_hint)
+      def upload_document(file, opts)
         response = nil
+
+        # Use StringIO on file string and force utf-8
+        file = StringIO.new(file.force_encoding('UTF-8')) if opts[:text]
+
         duration = Benchmark.realtime do
           response = upload_connection.post do |req|
             req.options[:timeout] = @upload_timeout
             req.url 'documents'
-            req.params[:doctype] = doctype_hint if doctype_hint
+            req.params[:doctype] = opts[:doctype_hint] if opts[:doctype_hint]
             req.headers['Content-Type']  = 'multipart/form-data'
             req.headers['Authorization'] = "Bearer #{@token.token}"
             req.headers.merge!(version_header)
