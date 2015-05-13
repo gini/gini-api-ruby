@@ -9,7 +9,7 @@
 
 ## Resources
 
-- Gini API overview: [https://www.gini.net/api/](https://www.gini.net/api/)
+- Gini developer center: [https://www.gini.net/developers/](https://www.gini.net/developers/)
 - Gini API documentation: [http://developer.gini.net/gini-api/](http://developer.gini.net/gini-api/)
 - Issue tracker: [https://github.com/gini/gini-api-ruby/issues](https://github.com/gini/gini-api-ruby/issues)
 
@@ -23,15 +23,21 @@ gem install gini-api
 
 Some code snippets to explain the usage of the API client. Please refer to the docs for a complete list of available classes and methods.
 
-### Initialize API object and setup authorization
+### Initialize API object and setup authentication
 
-gini-api-ruby supports two authentication mechanisms:
+gini-api-ruby supports three authentication mechanisms:
 
-- authentication code
-- username/password
+1) authorization code
 
-If you are planning to integrate gini-api-ruby into your ruby it is highly recommended to acquire the auth_code yourself and pass it to the login method.
-The authentication flow is described in detail in the official [API docs](http://developer.gini.net/gini-api/html/guides/oauth2.html#server-side-flow).
+Please acquire the auth_code yourself and pass it to the login method. The flow is described in detail in the official [API docs](http://developer.gini.net/gini-api/html/guides/oauth2.html#server-side-flow).
+
+2) username/password
+
+This flow can be used to exchange a user’s email address and password with an access token.
+
+3) basic auth with X-User-Identifier
+
+HTTP Basic Authentication is used to authenticate your client against the Gini API. In addition to the Authorization header, another header called X-User-Identifier is required. You must pass the identifier to every method to distinguish between users.
 
 ```ruby
 require 'gini-api'
@@ -46,7 +52,15 @@ api.login(auth_code: '1234567890')
 
 # username/password
 api.login(username: 'me@example.com', password: 'secret')
+
+# basic auth
+api.login()
 ```
+
+## Methods
+
+Every method takes an optional hash as last argument. You have to set the key :user_identifier on all methods if you implemented
+the basic auth flow.
 
 ### Upload
 
@@ -61,6 +75,8 @@ doc = api.upload('tmp/my_receipt.pdf', doctype_hint='Receipt')
 doc = api.upload('This is a utf-8 text message i would love to get extractions from', text: true)
 # => Gini::Api::Document
 doc = api.upload('/tmp/my_doc.txt')
+# => Gini::Api::Document
+doc = api.upload('/tmp/my_doc.pdf', user_identifier: 'user123')
 # => Gini::Api::Document
 doc.id
 # => "123456789-abcd-ef12-000000000000"
@@ -77,6 +93,8 @@ doc.successful?
 ```ruby
 list = api.list(limit: 20)
 # => Gini::Api::DocumentSet
+list = api.list(limit: 20, user_identifier: 'user123')
+# => Gini::Api::DocumentSet
 list.total
 # => 15
 list.documents
@@ -90,6 +108,8 @@ list.each { |doc| puts doc.id }
 ```ruby
 doc = api.get('123456789-abcd-ef12-000000000000')
 # => Gini::Api::Document
+doc = api.get('123456789-abcd-ef12-000000000000', user_identifier: 'user123')
+# => Gini::Api::Document
 doc.name
 # => test.pdf
 ```
@@ -99,12 +119,16 @@ doc.name
 ```ruby
 api.delete('123456789-abcd-ef12-000000000000')
 # => true
+api.delete('123456789-abcd-ef12-000000000000', user_identifier: 'user123')
+# => true
 ```
 
 ### Search
 
 ```ruby
 search = api.search('Telekom', type: 'invoice')
+# => Gini::Api::DocumentSet
+search = api.search('Telekom', type: 'invoice', user_identifier: 'user123')
 # => Gini::Api::DocumentSet
 search.total
 # => 5
@@ -118,6 +142,8 @@ search.each { |doc| puts doc.id }
 
 ```ruby
 doc = api.get('123456789-abcd-ef12-000000000000')
+# => Gini::Api::Document
+doc = api.get('123456789-abcd-ef12-000000000000', user_identifier: 'user123')
 # => Gini::Api::Document
 doc.pages.length
 # => 1
@@ -206,6 +232,8 @@ rescue Gini::Api::OAuthError => e
   # => https://api.gini.net/documents/abc-123
   puts e.method
   # => POST
+  puts e.user_identifier
+  # => user123
   puts e.api_message
   # => ERROR MESSAGE
   puts e.api_request_id

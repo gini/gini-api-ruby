@@ -98,7 +98,7 @@ module Gini
       # @example
       #   api.login(username: 'me@example.com', password: 'secret')
       #
-      def login(opts)
+      def login(opts = {})
         @oauth = Gini::Api::OAuth.new(self, opts)
         @token = @oauth.token
       end
