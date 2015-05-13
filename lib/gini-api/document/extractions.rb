@@ -13,23 +13,26 @@ module Gini
       # @param [String] location Document URL
       # @param [Boolean] incubator Return experimental extractions
       #
-      def initialize(api, location, incubator = false)
+      def initialize(api, location, incubator = false, options = {})
         @api       = api
         @location  = location
-        @incubator = incubator
-        @req_opts  = {}
+        @api.log.error("init OPTS: #{options.inspect}")
+        @req_opts  = options
 
         if incubator
-          @req_opts = { headers: @api.version_header(:json, :incubator) }
+          @req_opts = { headers: @api.version_header(:json, :incubator) }.deep_merge(options)
         end
 
-        update
+        api.log.error("EXT_OPTIONS: #{options.inspect}")
+        api.log.error("EXT_REQ_OPTS: #{req_opts.inspect}")
+
+        update(@req_opts)
       end
 
       # Populate instance variables from fetched extractions
       #
-      def update
-        response = @api.request(:get, @location, @req_opts)
+      def update(options = @req_opts)
+        response = @api.request(:get, @location, options)
 
         unless response.status == 200
           raise Gini::Api::DocumentError.new(
@@ -85,8 +88,9 @@ module Gini
         response = @api.request(
           :put,
           "#{@location}/#{label}",
-          headers: { 'content-type' => @api.version_header[:accept] },
-          body: feedback.to_json
+          { headers: { 'content-type' => @api.version_header[:accept] },
+            body: feedback.to_json,
+          }.deep_merge(@options)
         )
       rescue Gini::Api::RequestError => e
         if e.api_status == 422

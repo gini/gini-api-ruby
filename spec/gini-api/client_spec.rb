@@ -26,6 +26,7 @@ describe Gini::Api::Client do
   it { should respond_to(:login) }
   it { should respond_to(:logout) }
   it { should respond_to(:version_header) }
+  it { should respond_to(:user_identifier_header) }
   it { should respond_to(:request) }
   it { should respond_to(:upload) }
   it { should respond_to(:delete) }
@@ -150,6 +151,28 @@ describe Gini::Api::Client do
       it 'returns accept header with incubator version' do
         expect(api.version_header(:json, :incubator)).to \
           eql({ accept: 'application/vnd.gini.incubator+json' })
+      end
+
+    end
+
+  end
+
+  describe '#user_identifier_header' do
+
+    context 'with user identifier' do
+
+      it 'returns X-User-Identifier header' do
+        expect(api.user_identifier_header('johnny')).to \
+          eql({ "X-User-Identifier" => 'johnny' })
+      end
+
+    end
+
+    context 'without user identifier' do
+
+      it 'returns empty hash' do
+        expect(api.user_identifier_header(nil)).to \
+          eql({})
       end
 
     end
@@ -284,23 +307,22 @@ describe Gini::Api::Client do
     describe '#upload' do
 
       let(:doc) { double(Gini::Api::Document, poll: true, id: 'abc-123') }
+      let(:response) do
+        double('Response', {
+          status: status,
+          headers: { 'location' => 'LOC' },
+          env: {},
+          body: '{}'.to_json
+        })
+      end
 
       before do
         allow(doc).to receive(:duration=)
           allow(Gini::Api::Document).to \
-            receive(:new).with(api, 'LOC'
+            receive(:new).with(api, 'LOC', nil, {:user_identifier=>nil}
           ) { doc }
         allow(api.token).to receive(:token).and_return('abc-123')
-        stub_request(
-          :post,
-          %r{/documents}
-        ).to_return(
-          status: status,
-          headers: {
-            location: 'LOC'
-          },
-          body: '{}'.to_json
-        )
+        allow(api.token).to receive(:post).and_return(OAuth2::Response.new(response))
       end
 
       context 'when failed' do

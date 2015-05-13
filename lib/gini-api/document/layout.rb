@@ -9,9 +9,10 @@ module Gini
       #
       # @param [Gini::Api::Client] api Gini::Api::Client object
       # @param [String] location Document URL
-      def initialize(api, location)
+      def initialize(api, location, options = {})
         @api      = api
         @location = location
+        @options  = options
       end
 
       # Return layout as XML string
@@ -34,7 +35,7 @@ module Gini
       #
       # @return [String] Returns layout XML
       def get_xml
-        response = @api.request(:get, @location, type: 'xml')
+        response = @api.request(:get, @location, @options.merge(type: 'xml'))
         response.body if response.status == 200
       end
 
@@ -42,7 +43,7 @@ module Gini
       #
       # @return [String] Returns layout JSON
       def get_json
-        response = @api.request(:get, @location)
+        response = @api.request(:get, @location, @options)
         response.body if response.status == 200
       end
     end

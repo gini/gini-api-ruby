@@ -105,7 +105,7 @@ describe Gini::Api::Document::Extractions do
         double('Response',
           status: 200,
           headers: {
-            'content-type' => 'vnd/gini.not.supported+json'
+            'content-type' => 'vnd/gini.not.supported+json',
           },
           env: {},
           body: {}.to_json
@@ -128,7 +128,7 @@ describe Gini::Api::Document::Extractions do
           location,
           {
             headers: {
-              accept: 'application/vnd.gini.incubator+json'
+              accept: 'application/vnd.gini.incubator+json',
             }
           }
         ).and_return(OAuth2::Response.new(response))
@@ -205,7 +205,10 @@ describe Gini::Api::Document::Extractions do
         allow(api.token).to receive(:put).with(
           "#{location}/test",
           {
-            headers: { 'content-type' => header },
+            headers: {
+              'content-type' => header,
+              accept: 'application/vnd.gini.v1+json',
+             },
             body: { value: 'Johnny Bravo' }.to_json
           }
         ).and_return(OAuth2::Response.new(double('Response', status: 204)))
@@ -223,7 +226,10 @@ describe Gini::Api::Document::Extractions do
         allow(api.token).to receive(:put).with(
           "#{location}/test",
           {
-            headers: { 'content-type' => header },
+            headers: {
+              'content-type' => header,
+              accept: 'application/vnd.gini.v1+json',
+            },
             body: { value: 'Johnny Bravo' }.to_json
           }
         ).and_raise(Gini::Api::RequestError.new('dummy', double('xxx', status: 422, env: {}, body: {})))
@@ -242,7 +248,10 @@ describe Gini::Api::Document::Extractions do
         allow(api.token).to receive(:put).with(
           "#{location}/test",
           {
-            headers: { 'content-type' => header },
+            headers: {
+              'content-type' => header,
+              accept: 'application/vnd.gini.v1+json',
+            },
             body: { value: 'Johnny Bravo' }.to_json
           }
         ).and_raise(Gini::Api::RequestError.new('dummy', double('xxx', status: 500, env: {}, body: {})))

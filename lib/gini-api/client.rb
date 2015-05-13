@@ -3,6 +3,7 @@ require 'json'
 require 'logger'
 require 'faraday'
 require 'benchmark'
+require 'deep_merge'
 
 module Gini
   module Api
@@ -119,6 +120,20 @@ module Gini
         { accept: "application/vnd.gini.#{version}+#{type}" }
       end
 
+      # X-USER-IDENTIFIER header
+      #
+      # @param [Symbol, String] user_id User identifier
+      #
+      # @return [Hash] Return X-USER-IDENTIFIER header or empty hash
+      #
+      def user_identifier_header(user_id)
+        if user_id
+          { "X-User-Identifier" => user_id }
+        else
+          {}
+        end
+      end
+
       # Request wrapper that sets URI and accept header
       #
       # @param [Symbol] verb     HTTP request verb (:get, :post, :put, :delete)
@@ -128,9 +143,9 @@ module Gini
       # @option options [Hash]   :headers Custom headers. Must include accept
       #
       def request(verb, resource, options = {})
-        opts = {
-          headers: version_header(options.delete(:type) || @api_type)
-        }.merge(options)
+        opts = { headers: version_header(options.delete(:type) || @api_type).deep_merge(
+                   user_identifier_header(options[:user_identifier]))
+               }.deep_merge!(options)
 
         timeout(@processing_timeout) do
           @token.send(verb.to_sym, resource_to_location(resource).to_s , opts)
@@ -169,19 +184,31 @@ module Gini
         opts = {
           doctype_hint: nil,
           text: false,
-          interval: 0.5
+          interval: 0.5,
+          user_identifier: nil,
         }.merge(options)
 
         duration = Hash.new(0)
 
         # Document upload
-        duration[:upload], response = upload_document(file, opts)
+        response = nil
+
+        if opts[:text]
+          file = StringIO.new(file.force_encoding('UTF-8'))
+        end
+
+        duration[:upload] = Benchmark.realtime do
+          response = request(:post,
+                             "#{@api_uri}/documents",
+                             user_identifier: opts[:user_identifier],
+                             body: { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
+                            )
+        end
 
         # Start polling (0.5s) when document has been uploaded successfully
         if response.status == 201
-          doc = Gini::Api::Document.new(self, response.headers['location'])
+          doc = Gini::Api::Document.new(self, response.headers['location'], nil, user_identifier: opts[:user_identifier])
           duration[:processing] = poll_document(doc, opts[:interval], &block)
-
           duration[:total] = duration.values.inject(:+)
           doc.duration = duration
 
@@ -198,8 +225,8 @@ module Gini
       #
       # @param [String] id document ID
       #
-      def delete(id)
-        response = request(:delete, "/documents/#{id}")
+      def delete(id, options = {})
+        response = request(:delete, "/documents/#{id}", options)
         unless response.status == 204
           raise Gini::Api::DocumentError.new(
             "Deletion of docId #{id} failed (code=#{response.status})",
@@ -215,8 +242,9 @@ module Gini
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object
       #
-      def get(id)
-        Gini::Api::Document.new(self, "/documents/#{id}")
+      def get(id, options = {})
+        @log.error("GET OPTIONS: #{options.inspect}")
+        Gini::Api::Document.new(self, "/documents/#{id}", nil, options)
       end
 
       # List all documents
@@ -224,6 +252,7 @@ module Gini
       # @param [Hash] options List options (offset and limit)
       # @option options [Integer] :limit Maximum number of documents to return (defaults to 20)
       # @option options [Integer] :offset Start offset. Defaults to 0
+      # @option options [String]  :user_identifier User to act for
       #
       # @return [Gini::Api::DocumentSet] Returns a DocumentSet with total, offset and a list of Document objects
       #
@@ -232,7 +261,7 @@ module Gini
         limit  = Integer(opts[:limit])
         offset = Integer(opts[:offset])
 
-        response = request(:get, "/documents?limit=#{limit}&next=#{offset}")
+        response = request(:get, "/documents?limit=#{limit}&next=#{offset}", user_identifier: opts[:user_identifier])
         unless response.status == 200
           raise Gini::Api::DocumentError.new(
             "Failed to get list of documents (code=#{response.status})",
@@ -259,7 +288,7 @@ module Gini
         limit  = Integer(opts[:limit])
         offset = Integer(opts[:offset])
 
-        response = request(:get, "/search?q=#{query}&type=#{type}&limit=#{limit}&next=#{offset}")
+        response = request(:get, "/search?q=#{query}&type=#{type}&limit=#{limit}&next=#{offset}", user_identifier: opts[:user_identifier])
         unless response.status == 200
           raise Gini::Api::SearchError.new(
             "Search query failed with code #{response.status}",
@@ -309,46 +338,6 @@ module Gini
         raise ex
       end
 
-      # Setup API upload connection
-      #
-      # @return [Faraday] Faraday object to use in upload
-      #
-      def upload_connection
-        @upload_connection ||= Faraday.new(url: @api_uri) do |builder|
-          builder.use(Faraday::Request::Multipart)
-          builder.use(Faraday::Request::UrlEncoded)
-          builder.request(:retry, 3)
-          builder.adapter(Faraday.default_adapter)
-        end
-      end
-
-      # Helper to upload document
-      #
-      # @param [String] file location of document or open filehandle to be uploaded
-      # @param [String] doctype_hint Document type hint to optimize results or get incubator results
-      #
-      # @return [Faraday::Response] Response object from upload
-      #
-      def upload_document(file, opts)
-        response = nil
-
-        # Use StringIO on file string and force utf-8
-        file = StringIO.new(file.force_encoding('UTF-8')) if opts[:text]
-
-        duration = Benchmark.realtime do
-          response = upload_connection.post do |req|
-            req.options[:timeout] = @upload_timeout
-            req.url 'documents'
-            req.params[:doctype] = opts[:doctype_hint] if opts[:doctype_hint]
-            req.headers['Content-Type']  = 'multipart/form-data'
-            req.headers['Authorization'] = "Bearer #{@token.token}"
-            req.headers.merge!(version_header)
-            req.body = { file: Faraday::UploadIO.new(file, 'application/octet-stream') }
-          end
-        end
-
-        return duration, response
-      end
     end
   end
 end

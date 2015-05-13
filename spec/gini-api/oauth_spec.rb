@@ -135,6 +135,33 @@ describe Gini::Api::OAuth do
 
     end
 
+    context 'login with basic auth' do
+
+      let(:client) { double('OAuth2::Client') }
+
+      before do
+        allow(OAuth2::AccessToken).to receive(:new)
+        allow(OAuth2::Client).to receive(:new).and_return(client)
+        allow(client).to receive(:connection)
+      end
+
+      it 'initializes connection' do
+        expect(client).to receive(:connection)
+        Gini::Api::OAuth.new(api, {})
+      end
+
+      it 'returns OAuth2::AccessToken' do
+        expect(OAuth2::AccessToken).to receive(:new).with(
+          client,
+          nil,
+          mode: :header,
+          header_format: "Basic Y2lkOnNlYw=="
+        )
+        Gini::Api::OAuth.new(api, {})
+      end
+
+    end
+
   end
 
   describe '#destroy' do

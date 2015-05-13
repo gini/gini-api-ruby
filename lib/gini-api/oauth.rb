@@ -1,4 +1,5 @@
 require 'oauth2'
+require 'base64'
 
 module Gini
   module Api
@@ -38,12 +39,22 @@ module Gini
           if opts.key?(:auth_code) && !opts[:auth_code].empty?
             # Exchange code for a token
             exchange_code_for_token(api, client, opts[:auth_code])
-          else
-            #
+          elsif (opts.key?(:username) && !opts[:username].empty?) && (opts.key?(:password) && !opts[:password].empty?)
+            # Login with username and password
             login_with_resource_owner_password_credentials(
               client,
               opts[:username],
               opts[:password],
+            )
+          else
+            # Gini backend gateway auth (basic auth)
+            # Details: http://developer.gini.net/gini-api/html/guides/anonymous-users.html#guide-anonymous-accounts-trusted
+            client.connection()
+            OAuth2::AccessToken.new(
+              client,
+              nil,
+              mode: :header,
+              header_format: "Basic #{Base64.encode64(api.client_id + ':' + api.client_secret).gsub("\n", '')}"
             )
           end
 

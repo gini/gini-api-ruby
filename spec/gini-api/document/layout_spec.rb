@@ -55,7 +55,8 @@ describe Gini::Api::Document::Layout do
       expect(api).to \
         receive(:request).with(
           :get,
-          location
+          location,
+          {}
         )
     end
 

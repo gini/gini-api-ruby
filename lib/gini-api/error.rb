@@ -23,6 +23,7 @@ module Gini
     class Error < StandardError
       attr_reader   :api_response, :api_method, :api_url
       attr_reader   :api_status, :api_message, :api_request_id
+      attr_reader   :user_identifier
       attr_accessor :docid
 
       # Parse response object and set instance vars accordingly
@@ -55,11 +56,15 @@ module Gini
       # Parse Faraday response and fill instance variables
       #
       def parse_response
-        @api_method     = @api_response.env[:method]
-        @api_url        = @api_response.env[:url].to_s
-        @api_status     = @api_response.status
-        @api_message    = 'undef'
-        @api_request_id = 'undef'
+        @api_method      = @api_response.env[:method]
+        @api_url         = @api_response.env[:url].to_s
+        @api_status      = @api_response.status
+        @api_message     = 'undef'
+        @api_request_id  = 'undef'
+
+        if @api_response.env.key? :request_headers and @api_response.env[:request_headers].key? "X-User-Identifier"
+          @user_identifier = @api_response.env[:request_headers]["X-User-Identifier"]
+        end
 
         unless @api_response.body.empty?
           begin
