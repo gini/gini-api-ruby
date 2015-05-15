@@ -85,18 +85,23 @@ module Gini
         end
       end
 
-      # Acquire OAuth2 token and popolate @oauth (instance of Gini::Api::OAuth.new)
-      # and @token (OAuth2::AccessToken).  Supports 2 strategies: username/password and authorization code
+      # Acquire OAuth2 token and popolate @oauth (instance of Gini::Api::OAuth)
+      # and @token (OAuth2::AccessToken).  Supports 3 strategies:
+      #  - username/password
+      #  - auth code
+      #  - basic auth (http://developer.gini.net/gini-api/html/guides/anonymous-users.html#communication-to-the-gini-api-via-a-backend-gateway)
       #
       # @param [Hash] opts Your authorization credentials
-      # @option opts [String] :auth_code OAuth authorization code. Will be exchanged for a token
+      # @option opts [String] :auth_code OAuth auth code. Will be exchanged for a token
       # @option opts [String] :username API username
       # @option opts [String] :password API password
       #
-      # @example
+      # @example Login with auch code
       #   api.login(auth_code: '1234567890')
-      # @example
+      # @example Login with username/password
       #   api.login(username: 'me@example.com', password: 'secret')
+      # @example Login with basic auth
+      #   api.login()
       #
       def login(opts = {})
         @oauth = Gini::Api::OAuth.new(self, opts)
@@ -122,25 +127,26 @@ module Gini
 
       # X-USER-IDENTIFIER header
       #
-      # @param [Symbol, String] user_id User identifier
+      # @param [Symbol, String] user_identifier User identifier
       #
-      # @return [Hash] Return X-USER-IDENTIFIER header or empty hash
+      # @return [Hash] Return X-User-Identifier header or empty hash
       #
-      def user_identifier_header(user_id)
-        if user_id
-          { "X-User-Identifier" => user_id }
+      def user_identifier_header(user_identifier)
+        if user_identifier
+          { "X-User-Identifier" => user_identifier }
         else
           {}
         end
       end
 
-      # Request wrapper that sets URI and accept header
+      # Request wrapper that sets URI, headers and body
       #
-      # @param [Symbol] verb     HTTP request verb (:get, :post, :put, :delete)
+      # @param [Symbol] verb HTTP request verb (:get, :post, :put, :delete)
       # @param [String] resource API resource like /documents
-      # @param [Hash]   options  Optional type and custom headers
-      # @option options [String] :type Type to pass to version_header (:xml, :json)
-      # @option options [Hash]   :headers Custom headers. Must include accept
+      # @param [Hash]   options Optional type and custom headers
+      # @option options [String]         :type Type to pass to version_header (:xml, :json)
+      # @option options [Hash]           :headers Custom headers. Must include accept
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       def request(verb, resource, options = {})
         opts = { headers: version_header(options.delete(:type) || @api_type).deep_merge(
@@ -165,9 +171,10 @@ module Gini
       #
       # @param [String] file path or open filehandle of the document to upload
       # @param [Hash] options Hash of available upload settings
-      # @option options [String] :doctype_hint Document type hint to optimize results or get incubator results
-      # @option options [String] :text Use given file-string as text upload
-      # @option options [Float]  :interval Interval to poll progress
+      # @option options [String]         :doctype_hint Document type hint to optimize results or get incubator results
+      # @option options [String]         :text Use given file-string as text upload
+      # @option options [Float]          :interval Interval to poll progress
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object for uploaded document
       #
@@ -179,6 +186,8 @@ module Gini
       #   doc = api.upload('/tmp/myfile.pdf') { |d| puts "Progress: #{d.progress}" }
       # @example Upload and monitor progress
       #   doc = api.upload('This is a text message i would love to get extractions from', text: true)
+      # example Upload with user identifier
+      #   doc = api.upload('/tmp/myfile.pdf', user_identifier: 'user123')
       #
       def upload(file, options = {}, &block)
         opts = {
@@ -224,6 +233,13 @@ module Gini
       # Delete document
       #
       # @param [String] id document ID
+      # @param [Hash] options Hash of available delete settings
+      # @option options [String, Symbol] :user_identifier User identifier
+      #
+      # example Delete document
+      #   api.delete('aaaaa-bbbbbb-ccccc-12345')
+      # example Delete document with user identifier
+      #   api.delete('aaaaa-bbbbbb-ccccc-12345', user_identifier: 'user123')
       #
       def delete(id, options = {})
         response = request(:delete, "/documents/#{id}", options)
@@ -239,22 +255,33 @@ module Gini
       # Get document by Id
       #
       # @param [String] id document ID
+      # @param [Hash] options Hash of available delete settings
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       # @return [Gini::Api::Document] Return Gini::Api::Document object
       #
+      # example Get document
+      #   doc = api.get('aaaaa-bbbbbb-ccccc-12345')
+      # example Get document with user identifier
+      #   doc = api.get('aaaaa-bbbbbb-ccccc-12345', user_identifier: 'user123')
+      #
       def get(id, options = {})
-        @log.error("GET OPTIONS: #{options.inspect}")
         Gini::Api::Document.new(self, "/documents/#{id}", nil, options)
       end
 
       # List all documents
       #
       # @param [Hash] options List options (offset and limit)
-      # @option options [Integer] :limit Maximum number of documents to return (defaults to 20)
-      # @option options [Integer] :offset Start offset. Defaults to 0
-      # @option options [String]  :user_identifier User to act for
+      # @option options [Integer]        :limit Maximum number of documents to return (defaults to 20)
+      # @option options [Integer]        :offset Start offset. Defaults to 0
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       # @return [Gini::Api::DocumentSet] Returns a DocumentSet with total, offset and a list of Document objects
+      #
+      # example List documents
+      #   docs = api.list(limit: 100)
+      # example List documents with user identifier
+      #   doc = api.list(limit: 30, offset:10, user_identifier: 'user123')
       #
       def list(options = {})
         opts   = { limit: 20, offset: 0 }.merge(options)
@@ -268,18 +295,24 @@ module Gini
             response
           )
         end
-        Gini::Api::DocumentSet.new(self, response.parsed)
+        Gini::Api::DocumentSet.new(self, response.parsed, options)
       end
 
       # Fulltext search for documents
       #
       # @param [String, Array] query  The search term(s), separated by space. Multiple terms as array
       # @param [Hash] options Search options
-      # @option options [String]  :type   Only include documents with the given doctype
-      # @option options [Integer] :limit  Number of results per page. Must be between 1 and 250. Defaults to 20
-      # @option options Integer]  :offset Start offset. Defaults to 0
+      # @option options [String]         :type   Only include documents with the given doctype
+      # @option options [Integer]        :limit  Number of results per page. Must be between 1 and 250. Defaults to 20
+      # @option options Integer]         :offset Start offset. Defaults to 0
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       # @return [Gini::Api::DocumentSet] Returns a DocumentSet with total, offset and a list of Document objects
+      #
+      # example Search documents
+      #   docs = api.search(type: 'invoice', limit: 5)
+      # example Search documents with user identifier
+      #   doc = api.search(type: 'invoice', limit: 5, user_identifier: 'user123')
       #
       def search(query, options = {})
         opts   = { type: '', limit: 20, offset: 0 }.merge(options)
@@ -295,7 +328,7 @@ module Gini
             response
           )
         end
-        Gini::Api::DocumentSet.new(self, response.parsed)
+        Gini::Api::DocumentSet.new(self, response.parsed, options)
       end
 
       private

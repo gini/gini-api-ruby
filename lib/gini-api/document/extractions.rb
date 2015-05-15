@@ -12,24 +12,25 @@ module Gini
       # @param [Gini::Api::Client] api Gini::Api::Client object
       # @param [String] location Document URL
       # @param [Boolean] incubator Return experimental extractions
+      # @param [Hash] options Additional settings
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       def initialize(api, location, incubator = false, options = {})
         @api       = api
         @location  = location
-        @api.log.error("init OPTS: #{options.inspect}")
         @req_opts  = options
 
         if incubator
           @req_opts = { headers: @api.version_header(:json, :incubator) }.deep_merge(options)
         end
 
-        api.log.error("EXT_OPTIONS: #{options.inspect}")
-        api.log.error("EXT_REQ_OPTS: #{req_opts.inspect}")
-
         update(@req_opts)
       end
 
       # Populate instance variables from fetched extractions
+      #
+      # @param [Hash] options Additional settings
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       def update(options = @req_opts)
         response = @api.request(:get, @location, options)

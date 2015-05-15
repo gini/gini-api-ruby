@@ -27,15 +27,15 @@ Some code snippets to explain the usage of the API client. Please refer to the d
 
 gini-api-ruby supports three authentication mechanisms:
 
-1) authorization code
+#### authorization code
 
 Please acquire the auth_code yourself and pass it to the login method. The flow is described in detail in the official [API docs](http://developer.gini.net/gini-api/html/guides/oauth2.html#server-side-flow).
 
-2) username/password
+#### username/password
 
 This flow can be used to exchange a user’s email address and password with an access token.
 
-3) basic auth with X-User-Identifier
+#### basic auth with X-User-Identifier
 
 HTTP Basic Authentication is used to authenticate your client against the Gini API. In addition to the Authorization header, another header called X-User-Identifier is required. You must pass the identifier to every method to distinguish between users.
 

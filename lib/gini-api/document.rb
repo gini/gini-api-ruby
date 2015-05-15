@@ -9,9 +9,11 @@ module Gini
 
       # Instantiate a new Gini::Api::Document object from URL
       #
-      # @param [Gini::Api::Client] api       Gini::Api::Client object
-      # @param [String]            location  Document URL
-      # @param [Hash]              from_data Hash with doc data (from search for example)
+      # @param [Gini::Api::Client] api Gini::Api::Client object
+      # @param [String] location  Document URL
+      # @param [Hash] from_data Hash with doc data (from search for example)
+      # @param [Hash] options Additional settings
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       def initialize(api, location, from_data = nil, options = {})
         @api      = api
@@ -24,11 +26,11 @@ module Gini
       # Fetch document resource and populate instance variables
       #
       # @param [Hash] from_data Ruby hash with doc data
+      # @param [Hash] options Additional settings
+      # @option options [String, Symbol] :user_identifier User identifier
       #
       def update(from_data = nil, options = @options)
         data = {}
-
-        @api.log.error("in update 1: #{options}")
 
         if from_data.nil?
           response = @api.request(:get, @location, options)
@@ -43,10 +45,7 @@ module Gini
           data = from_data
         end
 
-        @api.log.error("in update 2: #{options} with data #{data.inspect}")
-
         data.each do |k, v|
-          @api.log.error("Setting #{k} to #{v}")
           instance_variable_set("@#{k}", v)
 
           # We skip pages as it's rewritted by method pages()
@@ -54,8 +53,6 @@ module Gini
 
           self.class.send(:attr_reader, k)
         end
-
-        @api.log.error("in update 3: #{options}")
       end
 
       # Poll document progress and return when state equals COMPLETED
@@ -150,7 +147,7 @@ module Gini
         response = @api.request(
           :post,
           "#{@_links[:document]}/errorreport",
-          params: { summary: summary, description: description }
+          { params: { summary: summary, description: description } }.merge(@options)
         )
         unless response.status == 200
           raise Gini::Api::DocumentError.new(

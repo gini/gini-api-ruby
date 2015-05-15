@@ -9,6 +9,9 @@ module Gini
       #
       # @param [Gini::Api::Client] api Gini::Api::Client object
       # @param [String] location Document URL
+      # @param [Hash] options Additional settings
+      # @option options [String, Symbol] :user_identifier User identifier
+      #
       def initialize(api, location, options = {})
         @api      = api
         @location = location
