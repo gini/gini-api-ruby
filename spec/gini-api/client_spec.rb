@@ -99,6 +99,19 @@ describe Gini::Api::Client do
 
     end
 
+    context 'with {} (basic auth)' do
+
+      it 'sets @token' do
+        expect(Gini::Api::OAuth).to \
+          receive(:new).with(api, {}) { oauth }
+        expect(oauth).to receive(:token)
+
+        api.login()
+        expect(api.token).to eql('TOKEN')
+      end
+
+    end
+
   end
 
   describe '#logout' do
