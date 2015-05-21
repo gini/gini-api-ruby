@@ -237,12 +237,53 @@ describe Gini::Api::Document do
       })
     end
 
-    it do
-      allow(api.token).to receive(:get).with(
-        "#{location}/extractions",
-        { headers: { accept: header } }
-      ).and_return(OAuth2::Response.new(ex_response))
-      expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+    context 'with default options' do
+
+      it do
+        expect(api.token).to receive(:get).with(
+          "#{location}/extractions",
+          { headers: { accept: header } }
+        ).and_return(OAuth2::Response.new(ex_response))
+        expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+      end
+
+      it 'returns the same data every time' do
+        expect(api.token).to receive(:get).once.with(
+          "#{location}/extractions",
+          { headers: { accept: header } }
+        ).and_return(OAuth2::Response.new(ex_response))
+        expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+        expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+        expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+      end
+
+    end
+
+    context 'with refresh == true' do
+
+      it do
+        expect(api.token).to receive(:get).twice.with(
+          "#{location}/extractions",
+          { headers: { accept: header } }
+        ).and_return(OAuth2::Response.new(ex_response))
+        expect(document.extractions).to be_a(Gini::Api::Document::Extractions)
+        expect(document.extractions(refresh: true)).to be_a(Gini::Api::Document::Extractions)
+      end
+
+    end
+
+    context 'with incubator == true' do
+
+      let(:incubator_header) { 'application/vnd.gini.incubator+json' }
+
+      it do
+        expect(api.token).to receive(:get).with(
+          "#{location}/extractions",
+          { headers: { accept: incubator_header } }
+        ).and_return(OAuth2::Response.new(ex_response))
+        expect(document.extractions(incubator: true)).to be_a(Gini::Api::Document::Extractions)
+      end
+
     end
 
   end

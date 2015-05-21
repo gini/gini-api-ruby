@@ -157,14 +157,23 @@ doc.extractions.undefinedLabel
 # => nil
 ```
 
+By default extractions are only fetched once and later requests return the cached values. Setting refresh=true will invalidate the cache and query the API directly.
+
+```ruby
+d.extractions(refresh: true)[:amountToPay]
+# => "10.00:EUR"
+doc.extractions(refresh: true).raw
+# => {:extractions=>{...
+```
+
 #### Incubator
 
 The incubator Gini API is unstable and subject of change. It allows early access to immature features which are still in research or under development. Please refer to the official API documentation for further details.
 
 ```ruby
-doc.extractions(incubator=true).amountLiters
+doc.extractions(incubator: true).amountLiters
 # => {:amountLiters=>{:entity=>"volume", :value=>"25.34:l", :box=>{:top=>1774.0, :left=>674.0, :width=>376.0, :height=>48.0, :page=>1}}
-doc.extractions(incubator=true)[:amountLiters]
+doc.extractions(incubator: true)[:amountLiters]
 # => "25.34:l"
 ```
 

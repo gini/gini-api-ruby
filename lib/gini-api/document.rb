@@ -101,12 +101,19 @@ module Gini
 
       # Initialize extractions from @_links and return Gini::Api::Extractions object
       #
-      # @param [Boolean] incubator Return experimental extractions
+      # @param [Hash]    options  Options
+      # @option options [Boolean] :refresh Invalidate extractions cache
+      # @option options [Boolean] :incubator Return experimental extractions
       #
       # @return [Gini::Api::Document::Extractions] Return Gini::Api::Document::Extractions object for uploaded document
       #
-      def extractions(incubator = false)
-        @extractions ||= Gini::Api::Document::Extractions.new(@api, @_links[:extractions], incubator)
+      def extractions(options = {})
+        opts = { refresh: false, incubator: false }.merge(options)
+        if opts[:refresh] or @extractions.nil?
+          @extractions = Gini::Api::Document::Extractions.new(@api, @_links[:extractions], opts[:incubator])
+        else
+          @extractions
+        end
       end
 
       # Initialize layout from @_links[:layout] and return Gini::Api::Layout object
