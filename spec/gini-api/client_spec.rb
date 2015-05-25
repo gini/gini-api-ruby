@@ -331,11 +331,24 @@ describe Gini::Api::Client do
 
       before do
         allow(doc).to receive(:duration=)
-          allow(Gini::Api::Document).to \
-            receive(:new).with(api, 'LOC', nil, {:user_identifier=>nil}
-          ) { doc }
+        allow(Gini::Api::Document).to \
+          receive(:new).with(api, 'LOC', nil, {:user_identifier=>nil}
+        ) { doc }
         allow(api.token).to receive(:token).and_return('abc-123')
         allow(api.token).to receive(:post).and_return(OAuth2::Response.new(response))
+      end
+
+      context 'with user_identifier' do
+
+        let(:status) { 201 }
+
+        it 'passes it to document' do
+          allow(Gini::Api::Document).to \
+            receive(:new).with(api, 'LOC', nil, {:user_identifier=>"user123"}
+          ) { doc }
+          api.upload('spec/integration/files/test.pdf', user_identifier: 'user123')
+        end
+
       end
 
       context 'when failed' do
@@ -382,6 +395,23 @@ describe Gini::Api::Client do
         )
       end
 
+      context 'with user_identifier' do
+
+        let(:status) { 204 }
+
+        it 'passes it to #request' do
+          expect(api.token).to receive(:delete).with(
+            %r{/documents/123456},
+            {:headers => {
+              :accept => 'application/vnd.gini.v1+json',
+              'X-User-Identifier' => 'user123',
+            },
+            :user_identifier=>"user123"}).and_return(response)
+          api.delete('123456', user_identifier: 'user123')
+        end
+
+      end
+
       context 'with invalid docId' do
 
         let(:status) { 203 }
@@ -413,6 +443,22 @@ describe Gini::Api::Client do
         expect(Gini::Api::Document).to \
           receive(:new) { double('Gini::Api::Document') }
         api.get('abc-123')
+      end
+
+      context 'with user_identifier' do
+
+        let(:status) { 204 }
+
+        it 'passes it to Document.new' do
+          expect(Gini::Api::Document).to \
+            receive(:new).with(api,
+              "/documents/123456",
+              nil,
+              user_identifier: 'user123'
+            ) { double('Gini::Api::Document') }
+          api.get('123456', user_identifier: 'user123')
+        end
+
       end
 
     end
@@ -490,6 +536,22 @@ describe Gini::Api::Client do
 
       end
 
+      context 'with user_identifier' do
+
+        let(:doc_count) { 0 }
+        let(:documents) { [] }
+
+        it 'passes it to #request' do
+          expect(api).to \
+            receive(:request).with(:get,
+              "/documents?limit=20&next=0",
+              user_identifier: 'user123'
+            ) { OAuth2::Response.new(response) }
+            api.list(user_identifier: 'user123')
+        end
+
+      end
+
     end
 
     describe '#search' do
@@ -561,6 +623,22 @@ describe Gini::Api::Client do
         it do
           expect{api.search('invoice')}.to \
             raise_error(Gini::Api::SearchError, /Search query failed with code 500/)
+        end
+
+      end
+
+      context 'with user_identifier' do
+
+        let(:doc_count) { 0 }
+        let(:documents) { [] }
+
+        it 'passes it to #request' do
+          expect(api).to \
+            receive(:request).with(:get,
+              "/search?q=invoice&type=&limit=20&next=0",
+              user_identifier: 'user123'
+            ) { OAuth2::Response.new(response) }
+            api.search('invoice', user_identifier: 'user123')
         end
 
       end

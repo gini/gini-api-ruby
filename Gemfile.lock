@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    gini-api (0.9.11)
+    gini-api (0.10.0)
       deep_merge
       logger
       oauth2
